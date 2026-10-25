@@ -140,6 +140,8 @@ input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--pri)
 .capa.com-img .ini{display:none}
 .capa.com-img .plat{position:relative;align-self:flex-start;background:rgba(0,0,0,.62);color:#fff;border-radius:5px;padding:1px 5px;font-size:9.5px;opacity:1}
 .capa.mini.com-img .plat{display:none}
+.capa-form{display:flex;gap:12px;align-items:center}
+.lendo-topo{display:flex;gap:12px;align-items:center}
 .card-corpo{min-width:0}
 .card-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
 .card h3{font-size:15.5px;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -197,7 +199,7 @@ button.chip{cursor:pointer}
 .segmentado button{min-height:38px;border:none;background:transparent;border-radius:9px;font-weight:650;color:var(--txt2)}
 .segmentado button.ativo{background:var(--card);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.15)}
 .ordem{list-style:none;padding:0;margin:0;display:grid;gap:8px}
-.ordem-item{display:grid;grid-template-columns:34px 24px 1fr auto;align-items:center;gap:6px;background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:6px 8px 6px 2px;transition:box-shadow .15s,border-color .15s}
+.ordem-item{display:grid;grid-template-columns:34px 24px 32px 1fr auto;align-items:center;gap:6px;background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:6px 8px 6px 2px;transition:box-shadow .15s,border-color .15s}
 .alca{touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;height:48px;font-size:20px;color:var(--txt3);user-select:none;-webkit-user-select:none}
 .pos{font-weight:800;color:var(--txt3);text-align:center;font-size:14px}
 .ordem-info{min-width:0;cursor:pointer;padding:4px 0}
@@ -377,7 +379,8 @@ const jogoPadrao = () => ({
 });
 const livroPadrao = () => ({
   id: uid(), titulo: '', autor: '', categoria: 'Filosofia', dificuldade: 'Média', status: 'Na fila', formato: 'Físico',
-  totalPaginas: null, paginaAtual: 0, ordem: 0, semPosicao: false, inicio: '', fim: '', avaliacao: null, notas: ''
+  totalPaginas: null, paginaAtual: 0, ordem: 0, semPosicao: false, inicio: '', fim: '', avaliacao: null, notas: '',
+  capa: '', capaBuscada: false // capa achada no Google Books / Open Library
 });
 const integracoesPadrao = () => ({ steam: null, psn: null, ignorados: { steam: [], psn: [] } });
 const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null, integracoes: integracoesPadrao() });
@@ -575,7 +578,7 @@ function irPara(aba) {
   ABAS[aba].render();
   try { window.scrollTo(0, 0); } catch (e) { /* ignora */ }
 }
-const render = () => ABAS[abaAtual].render();
+const render = () => { ABAS[abaAtual].render(); buscarCapasLivros(); };
 
 /* =========================================================
    CÁLCULOS AUXILIARES
@@ -695,7 +698,7 @@ function miniJogo(j) {
 }
 function miniLivro(l) {
   const p = progressoLivro(l);
-  return `<a class="mini-card" href="#livros"><span class="capa mini livro">${esc(iniciais(l.titulo))}</span>
+  return `<a class="mini-card" href="#livros">${capaLivro(l, 'mini')}
     <span class="mini-info"><strong>${esc(l.titulo)}</strong>${l.totalPaginas ? `<span class="barra ok"><i style="width:${p}%"></i></span><small>Página ${l.paginaAtual || 0} de ${l.totalPaginas} (${p}%)</small>` : `<small>${esc(l.autor || '')} · informe o total de páginas</small>`}</span></a>`;
 }
 function renderPainel() {
@@ -1095,8 +1098,9 @@ function cardLendo(l) {
   const falta = l.totalPaginas ? Math.max(0, l.totalPaginas - (l.paginaAtual || 0)) : null;
   const dias = falta != null && c.paginasDia > 0 ? Math.ceil(falta / c.paginasDia) : null;
   return `<section class="lendo-card">
+    <div class="lendo-topo">${capaLivro(l, 'mini', 'width:52px;height:74px')}<div>
     <span class="rotulo-lendo">Lendo agora</span>
-    <h3>${esc(l.titulo)}</h3><div class="sub">${esc(l.autor || 'Autor a definir')} · ${esc(l.formato)}</div>
+    <h3>${esc(l.titulo)}</h3><div class="sub">${esc(l.autor || 'Autor a definir')} · ${esc(l.formato)}</div></div></div>
     <div style="margin-top:12px"><span class="barra ok"><i style="width:${p}%"></i></span>
     <div class="legenda"><span>${l.totalPaginas ? `Página ${l.paginaAtual || 0} de ${l.totalPaginas} · ${p}%` : 'Informe o total de páginas para ver o progresso'}</span>
       <span>${dias != null ? (dias ? `~${dias} dia(s) no seu ritmo` : 'Concluído!') : ''}</span></div></div>
@@ -1132,6 +1136,7 @@ function htmlOrdem() {
     h += `<li class="ordem-item" data-id="${l.id}">
       <span class="alca" data-alca aria-label="Arrastar">⠿</span>
       <span class="pos">${i + 1}</span>
+      ${capaLivro(l, 'mini', 'width:32px;height:44px')}
       <div class="ordem-info" data-acao="editar-livro" data-id="${l.id}">
         <strong>${esc(l.titulo)}</strong>
         <small>${esc(l.autor || 'autor a definir')} · ${esc(l.categoria)} · <span class="dif-${l.dificuldade}">${esc(l.dificuldade)}</span></small>
@@ -1153,10 +1158,75 @@ function renderListaLivros() {
   $('#contagemL').textContent = `${lista.length} de ${state.livros.length} livros`;
   $('#listaLivros').innerHTML = lista.length ? lista.map(cardLivro).join('') : '<div class="vazio">Nenhum livro com esses filtros.</div>';
 }
+// Capa do livro (ou o quadro marrom com as iniciais enquanto não houver)
+function capaLivro(l, extra = '', estilo = '') {
+  const mini = extra.includes('mini'), tag = mini ? 'span' : 'div';
+  const img = l.capa ? `<img class="capa-img" src="${esc(l.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+  return `<${tag} class="capa livro ${extra}${img ? ' com-img' : ''}" data-capa-livro="${l.id}" data-extra="${extra}"${estilo ? ` style="${estilo}"` : ''}>${img}${mini
+    ? `<span class="plat">${esc(iniciais(l.titulo))}</span>` : `<span class="plat">${esc(l.formato)}</span><span class="ini">${esc(iniciais(l.titulo))}</span>`}</${tag}>`;
+}
+// Procura capas pelo título/autor: Google Books primeiro, Open Library de reserva.
+// Devolve uma lista de endereços de imagem (pode vir vazia). Lança erro se não houver conexão/limite.
+async function procurarCapasLivro(titulo, autor) {
+  const urls = [];
+  const pegar = async url => { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); };
+  const google = async q => {
+    const d = await pegar(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&printType=books`);
+    (d.items || []).forEach(i => {
+      const im = i.volumeInfo && i.volumeInfo.imageLinks;
+      const u = im && (im.thumbnail || im.smallThumbnail);
+      if (u) urls.push(u.replace(/^http:/, 'https:').replace('&edge=curl', ''));
+    });
+  };
+  const openLibrary = async a => {
+    const d = await pegar(`https://openlibrary.org/search.json?title=${encodeURIComponent(titulo)}${a ? `&author=${encodeURIComponent(a)}` : ''}&fields=cover_i&limit=10`);
+    (d.docs || []).forEach(x => { if (x.cover_i) urls.push(`https://covers.openlibrary.org/b/id/${x.cover_i}-M.jpg`); });
+  };
+  // Cada fonte pode falhar sozinha (o Google às vezes limita pedidos); só desiste se as duas falharem
+  let falhas = 0;
+  try {
+    await google(`intitle:${titulo}${autor ? ` inauthor:${autor}` : ''}`);
+    if (!urls.length && autor) await google(`intitle:${titulo}`);
+  } catch (e) { falhas++; }
+  try {
+    const antes = urls.length;
+    await openLibrary(autor);
+    if (urls.length === antes && autor) await openLibrary('');
+  } catch (e) { falhas++; }
+  // Nada achado com alguma fonte fora do ar: melhor tentar de novo mais tarde
+  if (falhas && !urls.length) throw new Error('tentar depois');
+  return [...new Set(urls)];
+}
+function atualizarCapaNaTela(l) {
+  $$(`[data-capa-livro="${l.id}"]`).forEach(el => { el.outerHTML = capaLivro(l, el.dataset.extra || '', el.getAttribute('style') || ''); });
+}
+// Busca, em segundo plano, a capa dos livros que ainda não têm (uma vez por livro)
+let buscandoCapas = false, capasLiberadas = false; // liberadas só depois do login/1ª sincronização
+const falhouCapa = new Map(); // livro → hora da última tentativa que falhou
+async function buscarCapasLivros() {
+  if (!capasLiberadas || buscandoCapas || !navigator.onLine || state.semente) return;
+  if (nuvem.ativo && (!nuvem.usuario || !nuvem.ultimaSync)) return;
+  const fila = state.livros.filter(l => !l.capa && !l.capaBuscada && l.titulo && !(Date.now() - (falhouCapa.get(l.id) || 0) < 600000));
+  if (!fila.length) return;
+  buscandoCapas = true;
+  let mudou = false;
+  try {
+    for (const x of fila) {
+      let urls;
+      try { urls = await procurarCapasLivro(x.titulo, x.autor); }
+      catch (e) { falhouCapa.set(x.id, Date.now()); continue; } // sem rede ou limite: tenta em 10 min
+      const l = acharLivro(x.id);
+      if (!l || l.titulo !== x.titulo || l.capaBuscada) continue;
+      l.capaBuscada = true; mudou = true;
+      if (urls[0]) { l.capa = urls[0]; atualizarCapaNaTela(l); }
+    }
+  } finally { buscandoCapas = false; }
+  if (mudou) salvar();
+}
 function cardLivro(l) {
   const p = progressoLivro(l);
   return `<article class="card" data-acao="editar-livro" data-id="${l.id}">
-    <div class="capa livro"><span class="plat">${esc(l.formato)}</span><span class="ini">${esc(iniciais(l.titulo))}</span></div>
+    ${capaLivro(l)}
     <div class="card-corpo">
       <div class="card-topo"><div><h3>${esc(l.titulo)}</h3><div class="sub">${esc(l.autor || 'Autor a definir')}</div></div>
         <button class="selo ${STATUS_CLASSE[l.status]}" data-acao="status-livro" data-id="${l.id}">${esc(l.status)} ▾</button></div>
@@ -1256,6 +1326,10 @@ function formLivro(id) {
   const html = `<form class="form" id="fLivro" novalidate>
     ${campo('Título', `<input name="titulo" required value="${esc(l.titulo)}" autocomplete="off">`)}
     ${campo('Autor', `<input name="autor" value="${esc(l.autor)}" autocomplete="off">`)}
+    <div class="capa-form"><span id="capaPrevia">${capaLivro(Object.assign({}, l, { id: 'previa' }), 'mini', 'width:52px;height:74px')}</span>
+      <input type="hidden" name="capa" value="${esc(l.capa)}"><input type="hidden" name="capaMexeu" value="">
+      <div class="acoes-linha" style="margin:0"><button class="btn mini" type="button" data-capa-trocar>🔄 ${l.capa ? 'Trocar capa' : 'Buscar capa'}</button>
+        <button class="btn mini" type="button" data-capa-tirar>Sem capa</button></div></div>
     <div class="g3">
       ${campo('Categoria', sel('categoria', CATEGORIAS, l.categoria))}
       ${campo('Dificuldade', sel('dificuldade', DIFS_LIVRO, l.dificuldade))}
@@ -1284,6 +1358,28 @@ function formLivro(id) {
       if (el.status.value === 'Lendo' && !el.inicio.value) el.inicio.value = hoje();
       if (el.status.value === 'Lido' && !el.fim.value) el.fim.value = hoje();
     });
+    // Capa: cada toque em "Trocar" mostra a próxima opção encontrada
+    let opcoesCapa = null, chaveBusca = '', idx = -1;
+    const mostrarCapa = url => {
+      el.capa.value = url; el.capaMexeu.value = '1';
+      $('#capaPrevia', c).innerHTML = capaLivro(Object.assign({}, l, { id: 'previa', capa: url, titulo: el.titulo.value }), 'mini', 'width:52px;height:74px');
+    };
+    $('[data-capa-trocar]', c).addEventListener('click', async ev => {
+      const b = ev.currentTarget, titulo = el.titulo.value.trim(), autor = el.autor.value.trim();
+      if (!titulo) { toast('Digite o título primeiro.', 'erro'); return; }
+      if (titulo + '|' + autor !== chaveBusca) {
+        b.disabled = true; b.textContent = 'Buscando…';
+        try { opcoesCapa = await procurarCapasLivro(titulo, autor); chaveBusca = titulo + '|' + autor; idx = opcoesCapa.indexOf(el.capa.value); }
+        catch (e) { toast('Não consegui buscar capas agora. Tente de novo daqui a pouco.', 'erro'); }
+        b.disabled = false; b.textContent = '🔄 Trocar capa';
+        if (!opcoesCapa) return;
+      }
+      if (!opcoesCapa.length) { toast('Nenhuma capa encontrada para esse título.', 'aviso'); return; }
+      idx = (idx + 1) % opcoesCapa.length;
+      mostrarCapa(opcoesCapa[idx]);
+      toast(`Capa ${idx + 1} de ${opcoesCapa.length}`);
+    });
+    $('[data-capa-tirar]', c).addEventListener('click', () => mostrarCapa(''));
     f.addEventListener('submit', e => { e.preventDefault(); salvarFormLivro(f, l, novo, posAtual); });
     if (novo) setTimeout(() => el.titulo.focus(), 250);
   });
@@ -1293,6 +1389,9 @@ function salvarFormLivro(form, l, novo, posAtual) {
   const titulo = (f.titulo || '').trim();
   if (!titulo) { toast('Informe o título do livro.', 'erro'); form.elements.titulo.focus(); return; }
   const ant = novo ? null : l.status;
+  // Capa escolhida à mão vale; se mudou título/autor sem escolher, busca de novo sozinho
+  if (f.capaMexeu === '1') { l.capa = f.capa || ''; l.capaBuscada = true; }
+  else if (novo || titulo !== l.titulo || (f.autor || '').trim() !== l.autor) { l.capa = ''; l.capaBuscada = false; }
   Object.assign(l, {
     titulo, autor: (f.autor || '').trim(), categoria: f.categoria, dificuldade: f.dificuldade, formato: f.formato,
     totalPaginas: num(f.totalPaginas) > 0 ? Math.round(num(f.totalPaginas)) : null,
@@ -1862,7 +1961,8 @@ state = carregar();
 if (!state) { state = dadosIniciais(); salvarLocal(); }
 aplicarTema();
 irPara(location.hash.slice(1) || 'painel');
-iniciarNuvem(); // na Vercel: login + sincronização; fora dela, nada muda
+iniciarNuvem() // na Vercel: login + sincronização; fora dela, nada muda
+  .finally(() => { capasLiberadas = true; buscarCapasLivros(); });
 if (!armazenamentoOk) setTimeout(() => toast('Este navegador está bloqueando o armazenamento. Use o backup para não perder dados.', 'erro'), 600);
 </script>
 </body>
