@@ -68,7 +68,7 @@ main{max-width:760px;margin:0 auto;padding:16px 16px calc(var(--nav-h) + 28px + 
 
 /* Navegação: barra inferior no celular, trilho no tablet, menu lateral no PC */
 .abas{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg2) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--borda);padding-bottom:env(safe-area-inset-bottom)}
-.abas-int{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav-h)}
+.abas-int{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
 .abas-marca{display:none}
 .aba{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--txt3);font-size:11.5px;font-weight:600;transition:color .15s,background .15s;border-radius:12px}
 .aba svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -298,6 +298,115 @@ button.chip{cursor:pointer}
 @keyframes gira{to{transform:rotate(360deg)}}
 @keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
+/* =========================================================
+   GAMIFICAÇÃO: jogador, chefão, próximo alvo, conquistas, celebração
+   ========================================================= */
+:root{--c-comum:#b9c0d2;--c-rara:#5bb0ff;--c-epica:var(--roxo);--c-lendaria:var(--ouro)}
+[data-tema="claro"]{--c-comum:#4a5270;--c-rara:#1d5fd0}
+.ico{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.btn .ico{width:18px;height:18px}
+.ico-titulo{width:15px;height:15px;vertical-align:-2px;margin-right:6px;color:var(--pri)}
+.xp{color:var(--magenta);font-family:var(--fonte-d);font-weight:700;font-variant-numeric:tabular-nums}
+.xp-alvo{color:var(--txt3);font-family:var(--fonte-d);font-weight:600}
+.meta-plat{color:var(--roxo);font-weight:700}
+.rot-mag{display:block;font:700 11px var(--fonte-d);letter-spacing:.14em;text-transform:uppercase;color:var(--magenta)}
+
+.jogador{display:flex;align-items:center;gap:14px;padding:16px;margin-bottom:14px;text-decoration:none;color:inherit;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--magenta) 13%,var(--card)),var(--card) 62%);border:1px solid color-mix(in srgb,var(--magenta) 35%,var(--borda));
+  clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px)}
+.anel{--p:0%;flex:none;width:68px;height:68px;border-radius:50%;padding:4px;background:conic-gradient(var(--magenta) var(--p),var(--card2) 0);box-shadow:0 0 16px color-mix(in srgb,var(--magenta) 40%,transparent)}
+.anel>span{width:100%;height:100%;border-radius:50%;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.anel small{font:700 9px var(--fonte-d);letter-spacing:.14em;color:var(--txt2)}
+.anel b{font:700 25px var(--fonte-d)}
+.anel.grande{width:116px;height:116px;padding:5px}
+.anel.grande b{font-size:46px}
+.anel.grande small{font-size:11px}
+.jogador-info{flex:1;min-width:0;display:grid;gap:5px}
+.jogador-info strong{font:700 19px/1.15 var(--fonte-d)}
+.jogador-info .legenda{margin-top:0}
+.jogador-info .legenda b{font-family:var(--fonte-d);color:var(--txt)}
+.barra.xp{height:10px}
+.barra.xp i{background:linear-gradient(90deg,var(--pri),var(--magenta));box-shadow:var(--brilho)}
+.painel-grade>.jogador{margin-bottom:0}
+.jogador-medalhas{flex:none;text-align:center;padding:8px 12px;border-radius:10px;background:var(--card2)}
+.jogador-medalhas b{display:block;font:700 22px var(--fonte-d);color:var(--roxo)}
+.jogador-medalhas small{font-size:11px;color:var(--txt2)}
+@media (max-width:420px){.jogador-medalhas{display:none}}
+
+.chefao{border-color:color-mix(in srgb,var(--perigo) 40%,var(--borda))}
+.chefao-topo{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.chefao-ico{width:48px;height:48px;padding:11px;border-radius:10px;color:var(--perigo);background:color-mix(in srgb,var(--perigo) 15%,var(--card2))}
+.chefao-topo h3{font:700 19px var(--fonte-d)}
+.rot-chefe{font:700 11px var(--fonte-d);letter-spacing:.12em;text-transform:uppercase;color:var(--perigo);white-space:nowrap}
+.chefao-hp{margin-left:auto;text-align:right}
+.chefao-hp b{display:block;font:700 20px var(--fonte-d);color:var(--perigo);font-variant-numeric:tabular-nums}
+.chefao-hp small{font-size:11.5px;color:var(--txt2)}
+.barra.boss{height:14px;border-radius:4px}
+.barra.boss i{border-radius:3px;background:linear-gradient(90deg,var(--perigo),var(--laranja))}
+.chefao .prev{margin-top:12px}
+@media (min-width:600px){.chefao .prev{grid-template-columns:1fr 1fr}}
+.prev-item small{display:block;font-size:11.5px;color:var(--txt2);margin-bottom:2px}
+
+.alvo{border-color:color-mix(in srgb,var(--pri) 50%,var(--borda))}
+.alvo-corpo{display:flex;gap:12px;align-items:center}
+.alvo-corpo>div{min-width:0}
+.alvo-corpo strong{display:block;font-size:15px}
+.alvo-corpo small{display:block;font-size:12.5px;color:var(--txt2);margin-top:2px}
+.alvo-corpo small.xp{color:var(--magenta)}
+
+.perfil-topo{display:flex;align-items:center;gap:20px;background:linear-gradient(135deg,color-mix(in srgb,var(--magenta) 13%,var(--card)),var(--card) 62%);border-color:color-mix(in srgb,var(--magenta) 35%,var(--borda))}
+.perfil-info{flex:1;min-width:0;display:grid;gap:6px}
+.perfil-titulo{font:700 26px/1.15 var(--fonte-d)}
+.perfil-info .legenda b{font-family:var(--fonte-d)}
+@media (max-width:480px){.perfil-topo{flex-direction:column;text-align:center}.perfil-info .legenda{text-align:left}}
+.xp-linha{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-top:1px solid var(--borda);font-size:13.5px}
+.xp-linha:first-of-type{border-top:0}
+.xp-linha b{font-family:var(--fonte-d);text-align:right}
+.xp-linha.total{border-top:1px solid var(--txt3);font-weight:700}
+.titulos{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.titulos li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;color:var(--txt3);background:var(--card2);font-size:14px}
+.titulos li.ok{color:var(--txt)}
+.titulos li.atual{outline:1px solid var(--magenta);color:var(--magenta);font-weight:700}
+.num-tit{font:700 11px var(--fonte-d);letter-spacing:.08em;min-width:44px;color:var(--txt2)}
+
+.filtro-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.fchip{min-height:38px;padding:0 14px;border-radius:99px;border:1px solid var(--borda);background:var(--card2);font-weight:600;font-size:13px;color:var(--txt2)}
+.fchip.ativo{background:var(--txt);color:var(--bg);border-color:var(--txt)}
+.medalhas{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+.medalha-card{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:14px 10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--borda)}
+.medalha{width:60px;height:68px;flex:none;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);display:flex;align-items:center;justify-content:center;color:#fff}
+.medalha .ico{width:26px;height:26px}
+.medalha.grande{width:104px;height:116px}
+.medalha.grande .ico{width:48px;height:48px}
+.r-comum .medalha{background:linear-gradient(160deg,#c9cfdd,#5d6478);color:#0b0d18}
+.r-rara .medalha{background:linear-gradient(160deg,#5bb8ff,#1d4ed8)}
+.r-epica .medalha{background:linear-gradient(160deg,#d2b0ff,#6a3ad4)}
+.r-lendaria .medalha{background:linear-gradient(160deg,#ffe28a,#c77d00);color:#3a2400}
+.medalha-card.bloq .medalha{background:var(--card);color:var(--txt3)}
+.medalha-card.r-epica:not(.bloq){border-color:color-mix(in srgb,var(--c-epica) 50%,var(--borda))}
+.medalha-card.r-lendaria:not(.bloq){border-color:color-mix(in srgb,var(--c-lendaria) 55%,var(--borda))}
+.medalha-card b{font-size:13.5px}
+.medalha-card small{font-size:12px;color:var(--txt2);line-height:1.3}
+.medalha-card .rar{font-size:11.5px;font-weight:700}
+.r-comum .rar{color:var(--c-comum)} .r-rara .rar{color:var(--c-rara)} .r-epica .rar{color:var(--c-epica)} .r-lendaria .rar{color:var(--c-lendaria)}
+.medalha-card.bloq .rar{color:var(--txt3)}
+.medalha-card .barra{width:80%;height:5px;border:0}
+.medalha-card .barra i{background:var(--txt3)}
+
+.celebra{position:fixed;inset:0;z-index:80;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(3,4,10,.82);opacity:0;transition:opacity .2s}
+.celebra.aberto{opacity:1}
+.celebra-caixa{width:100%;max-width:380px;max-height:100%;overflow:auto;padding:26px 22px 22px;background:var(--card);border:1px solid var(--magenta);display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px);transform:scale(.92);transition:transform .25s cubic-bezier(.2,1.4,.4,1)}
+.celebra.aberto .celebra-caixa{transform:none}
+.celebra h2{font:700 25px/1.2 var(--fonte-d)}
+.celebra-ganho{font:700 36px var(--fonte-d);color:var(--magenta);text-shadow:0 0 18px color-mix(in srgb,var(--magenta) 55%,transparent);animation:pulsa-xp 1.2s ease 2}
+@keyframes pulsa-xp{50%{transform:scale(1.08)}}
+.celebra-capa .capa{width:96px;height:132px;box-shadow:var(--brilho-ok)}
+.celebra-lista{width:100%;display:grid;gap:8px}
+.celebra-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--card2);text-align:left;font-size:13.5px}
+.celebra-item .medalha{width:30px;height:34px}
+.celebra-item .medalha .ico{width:15px;height:15px}
+
 /* Realce ao passar o mouse (só onde existe mouse) */
 @media (hover:hover){
   .card:hover,.mini-card:hover,.opcao:hover{border-color:color-mix(in srgb,var(--pri) 60%,var(--borda))}
@@ -373,6 +482,7 @@ button.chip{cursor:pointer}
     <a class="aba" href="#painel" data-aba="painel"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Painel</a>
     <a class="aba" href="#jogos" data-aba="jogos"><svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16.5" cy="11.5" r=".6"/><circle cx="18" cy="13.5" r=".6"/></svg>Jogos</a>
     <a class="aba" href="#livros" data-aba="livros"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5v17H6a2 2 0 0 0-2 1V5z"/><path d="M20 5a2 2 0 0 0-2-2h-5v17h5a2 2 0 0 1 2 1V5z"/></svg>Livros</a>
+    <a class="aba" href="#perfil" data-aba="perfil"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Perfil</a>
     <a class="aba" href="#config" data-aba="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</a>
   </div>
 </nav>
@@ -396,6 +506,9 @@ button.chip{cursor:pointer}
     <button class="btn link cheio" type="button" data-acao="usar-offline">Usar só neste aparelho por enquanto</button>
   </form>
 </div>
+
+<!-- Celebração (subiu de nível, platina, livro, conquista) -->
+<div class="celebra" id="celebra" hidden role="dialog" aria-modal="true" aria-labelledby="celebraTitulo"><div class="celebra-caixa" id="celebraCaixa"></div></div>
 
 <input type="file" id="arquivoBackup" accept=".json,application/json" hidden>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -644,6 +757,7 @@ const ABAS = {
   painel: { titulo: 'Painel', render: () => renderPainel() },
   jogos: { titulo: 'Jogos', render: () => renderJogos() },
   livros: { titulo: 'Livros', render: () => renderLivros() },
+  perfil: { titulo: 'Perfil', render: () => renderPerfil() },
   config: { titulo: 'Configurações', render: () => renderConfig() }
 };
 let abaAtual = 'painel';
@@ -698,6 +812,190 @@ function limparGrupos() {
   state.jogos.forEach(j => { if (j.grupo) cont[j.grupo] = (cont[j.grupo] || 0) + 1; });
   state.jogos.forEach(j => { if (j.grupo && cont[j.grupo] < 2) { j.grupo = null; j.versaoEscolhida = false; } });
 }
+
+/* =========================================================
+   GAMIFICAÇÃO: XP, níveis, chefão e conquistas
+   Tudo é calculado a partir dos jogos e livros (nada novo é gravado),
+   então o que já foi concluído antes também conta.
+   ========================================================= */
+const XP_LIVRO = { 'Leve': 80, 'Média': 120, 'Densa': 180 };
+const RARIDADES = { comum: ['Comum', 10], rara: ['Rara', 50], epica: ['Épica', 150], lendaria: ['Lendária', 400] };
+const TITULOS = [[1, 'Recruta da Estante'], [5, 'Explorador do Backlog'], [10, 'Caçador de Troféus'], [15, 'Devorador de Páginas'],
+  [20, 'Caçador de Platinas'], [30, 'Mestre da Estante'], [40, 'Lenda do Backlog']];
+const PAG_POR_HP = 30; // no chefão, 30 páginas valem o mesmo que 1 hora de jogo
+
+// Platina/100% = 100 + 30 × dificuldade; zerar = 40 + 15 × dificuldade (dificuldade vazia conta como 5).
+// Prioridade Alta: +25%. Platinar a versão escolhida de um duplicado: +50.
+function xpBaseJogo(j, tipo) {
+  const d = j.dificuldade ?? 5;
+  let xp = tipo === 'plat' ? 100 + 30 * d : 40 + 15 * d;
+  if (j.prioridade === 'Alta') xp *= 1.25;
+  if (tipo === 'plat' && j.grupo && j.versaoEscolhida) xp += 50;
+  return Math.ceil(xp);
+}
+const xpGanhoJogo = j => j.status === 'Platinado/100%' ? xpBaseJogo(j, 'plat') : j.status === 'Zerado' ? xpBaseJogo(j, 'zerar') : 0;
+const xpAlvoJogo = j => xpBaseJogo(j, j.meta === 'Só zerar' ? 'zerar' : 'plat');
+// Livro: Leve 80 · Média 120 · Densa 180, + 1 XP a cada 10 páginas
+const xpLivro = l => (XP_LIVRO[l.dificuldade] || 120) + Math.ceil((l.totalPaginas || 0) / 10);
+const xpGanhoLivro = l => l.status === 'Lido' ? xpLivro(l) : 0;
+
+// Para subir do nível N são precisos 50 × (N + 7) XP
+const xpParaSubir = n => 50 * (n + 7);
+function nivelDe(xp) {
+  let nivel = 1, resto = xp;
+  while (resto >= xpParaSubir(nivel)) { resto -= xpParaSubir(nivel); nivel++; }
+  return { nivel, noNivel: resto, precisa: xpParaSubir(nivel) };
+}
+const tituloDe = n => TITULOS.filter(([m]) => n >= m).pop()[1];
+const proximoTitulo = n => TITULOS.find(([m]) => m > n) || null;
+
+// Chefão "O Backlog": vida = horas que faltam + páginas que faltam ÷ 30
+function chefao() {
+  const J = state.jogos, L = state.livros;
+  const pend = J.filter(j => ['Na fila', 'Jogando'].includes(j.status) && j.meta && j.horasEstimadas > 0);
+  const filaL = L.filter(l => ['Na fila', 'Lendo'].includes(l.status) && l.totalPaginas > 0);
+  const hRest = pend.reduce((s, j) => s + Math.max(0, j.horasEstimadas - (j.horasJogadas || 0)), 0);
+  const pRest = filaL.reduce((s, l) => s + Math.max(0, l.totalPaginas - (l.paginaAtual || 0)), 0);
+  const hFeitas = J.filter(j => CONCLUIDO.includes(j.status)).reduce((s, j) => s + (j.horasEstimadas || 0), 0)
+    + pend.reduce((s, j) => s + Math.min(j.horasEstimadas, j.horasJogadas || 0), 0);
+  const pFeitas = L.filter(l => l.status === 'Lido').reduce((s, l) => s + (l.totalPaginas || 0), 0)
+    + filaL.reduce((s, l) => s + Math.min(l.totalPaginas, l.paginaAtual || 0), 0);
+  const hp = Math.round(hRest + pRest / PAG_POR_HP), dano = Math.round(hFeitas + pFeitas / PAG_POR_HP);
+  const max = hp + dano, pct = max ? Math.round(dano / max * 100) : 0;
+  const fase = max === 0 ? 'sem dados' : hp === 0 ? 'derrotado' : pct >= 67 ? 'Fase final · fúria' : pct >= 34 ? 'Fase 2 · ferido' : 'Fase 1';
+  return { hp, max, pct, fase };
+}
+
+// Conquistas do app (todas calculadas com os dados atuais)
+function conquistas() {
+  const J = state.jogos, L = state.livros, c = state.config, ano = new Date().getFullYear();
+  const plats = J.filter(j => j.status === 'Platinado/100%'), concl = J.filter(j => CONCLUIDO.includes(j.status));
+  const lidos = L.filter(l => l.status === 'Lido'), densos = lidos.filter(l => l.dificuldade === 'Densa');
+  const nEsima = (arr, campo, n) => arr.map(x => x[campo]).filter(Boolean).sort()[n - 1] || '';
+  const seq = lidos.filter(l => l.fim).sort((a, b) => a.fim.localeCompare(b.fim));
+  let equil = 0, dataEquil = '';
+  seq.forEach((l, i) => { if (i && l.dificuldade === 'Leve' && seq[i - 1].dificuldade === 'Densa' && ++equil === 3) dataEquil = l.fim; });
+  const platDificil = plats.filter(j => (j.dificuldade || 0) >= 8), platEscolhida = plats.filter(j => j.grupo && j.versaoEscolhida);
+  const horasTot = J.reduce((s, j) => s + (j.horasJogadas || 0), 0);
+  const maxHoras = J.reduce((m, j) => Math.max(m, j.horasJogadas || 0), 0);
+  const ch = chefao();
+  const platAno = plats.filter(j => anoDe(j.conclusao) === ano).length, lidosAno = lidos.filter(l => anoDe(l.fim) === ano).length;
+  const temporada = Math.round(((c.metaPlatinas > 0 ? Math.min(1, platAno / c.metaPlatinas) : 1) + (c.metaLivros > 0 ? Math.min(1, lidosAno / c.metaLivros) : 1)) * 50);
+  const sync = state.integracoes.psn || state.integracoes.steam || '';
+  const def = (id, nome, desc, rar, icone, atual, alvo, data = '') =>
+    ({ id, nome, desc, rar, icone, atual: Math.min(Math.round(atual), alvo), alvo, ok: atual >= alvo, data: atual >= alvo ? data : '' });
+  return [
+    def('primeira-leitura', 'Primeira leitura', 'Termine 1 livro', 'comum', 'livro', lidos.length, 1, nEsima(lidos, 'fim', 1)),
+    def('fim-de-jogo', 'Fim de jogo', 'Zere ou platine 1 jogo', 'comum', 'controle', concl.length, 1, nEsima(concl, 'conclusao', 1)),
+    def('organizado', 'Organizado', 'Tenha 5 livros com posição na ordem de leitura', 'comum', 'lista', listaOrdem().filter(l => !l.semPosicao).length, 5),
+    def('critico', 'Crítico', 'Dê nota a 5 livros', 'comum', 'estrela', L.filter(l => l.avaliacao).length, 5),
+    def('conectado', 'Conectado', 'Sincronize com a Steam ou a PSN', 'comum', 'sync', sync ? 1 : 0, 1, sync.slice(0, 10)),
+    def('primeira-platina', 'Primeira platina', 'Platine (ou faça 100%) 1 jogo', 'rara', 'trofeu', plats.length, 1, nEsima(plats, 'conclusao', 1)),
+    def('maratonista', 'Maratonista', 'Jogue 100 h em um único jogo', 'rara', 'relogio', maxHoras, 100),
+    def('sem-desperdicio', 'Sem desperdício', 'Platine a versão escolhida de um jogo duplicado', 'rara', 'estrela', platEscolhida.length, 1, nEsima(platEscolhida, 'conclusao', 1)),
+    def('equilibrio', 'Equilíbrio', 'Leia um Leve logo depois de um Denso, 3 vezes', 'rara', 'balanca', equil, 3, dataEquil),
+    def('filosofo', 'Filósofo', 'Termine 5 livros densos', 'epica', 'livro', densos.length, 5, nEsima(densos, 'fim', 5)),
+    def('sem-medo', 'Sem medo', 'Platine um jogo de dificuldade 8 ou mais', 'epica', 'caveira', platDificil.length, 1, nEsima(platDificil, 'conclusao', 1)),
+    def('biblioteca', 'Biblioteca', 'Termine 25 livros', 'epica', 'livro', lidos.length, 25, nEsima(lidos, 'fim', 25)),
+    def('meio-chefao', 'Meio chefão', 'Tire 50% da vida do Backlog', 'epica', 'caveira', ch.pct, 50),
+    def('temporada', `Temporada ${ano}`, 'Bata as duas metas do ano', 'lendaria', 'coroa', temporada, 100),
+    def('dez-platinas', 'Dez platinas', 'Platine 10 jogos', 'lendaria', 'trofeu', plats.length, 10, nEsima(plats, 'conclusao', 10)),
+    def('mil-horas', 'Mil horas', 'Jogue 1.000 h somando todos os jogos', 'lendaria', 'relogio', horasTot, 1000),
+    def('matador', 'Matador do Backlog', 'Zere a vida do chefão', 'lendaria', 'caveira', ch.max ? ch.pct : 0, 100)
+  ];
+}
+
+// Resumo do jogador: XP total, nível, título e conquistas
+function jogador() {
+  const xpJogos = state.jogos.reduce((s, j) => s + xpGanhoJogo(j), 0);
+  const xpLivros = state.livros.reduce((s, l) => s + xpGanhoLivro(l), 0);
+  const cq = conquistas();
+  const xpConq = cq.filter(c => c.ok).reduce((s, c) => s + RARIDADES[c.rar][1], 0);
+  const xp = xpJogos + xpLivros + xpConq;
+  return Object.assign({ xp, xpJogos, xpLivros, xpConq, conquistas: cq }, nivelDe(xp));
+}
+
+// Ícones (SVG de traço) usados na gamificação e nos botões
+const ICONES = {
+  trofeu: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  livro: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/>',
+  controle: '<path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.3 5H6.7a4 4 0 0 0-4 3.6L2 15a3 3 0 0 0 5.4 2l1.1-1.5h7l1.1 1.5A3 3 0 0 0 22 15l-.7-6.4A4 4 0 0 0 17.3 5z"/>',
+  lista: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  estrela: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+  sync: '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M3 21v-5h5"/>',
+  relogio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  balanca: '<path d="M12 3v18M7 21h10M5 7h14M5 7l-3 7a3 3 0 0 0 6 0zM19 7l-3 7a3 3 0 0 0 6 0z"/>',
+  caveira: '<circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><path d="M8 20v2h8v-2"/><path d="M16 20a2 2 0 0 0 1.6-3.2A8 8 0 1 0 6.4 16.8 2 2 0 0 0 8 20"/>',
+  coroa: '<path d="M3 18h18M4 18 3 7l5 4 4-6 4 6 5-4-1 11"/>',
+  cadeado: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  dado: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1"/><circle cx="15.5" cy="15.5" r="1"/><circle cx="12" cy="12" r="1"/>',
+  colar: '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
+  mais: '<path d="M12 5v14M5 12h14"/>',
+  alvo: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'
+};
+const ico = (nome, cls = 'ico') => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICONES[nome] || ''}</svg>`;
+const medalha = c => `<span class="medalha">${ico(c.ok ? c.icone : 'cadeado')}</span>`;
+
+// Celebração: compara o jogador antes e depois de uma ação e mostra o que mudou.
+// motivo: { tipo: 'plat' | 'zerado' | 'livro', item } (opcional); depois: função chamada ao fechar.
+let aoFecharCelebracao = null;
+function celebrar(antes, agora, motivo, depois) {
+  const ganho = agora.xp - antes.xp;
+  const novas = agora.conquistas.filter(c => c.ok && !(antes.conquistas.find(a => a.id === c.id) || {}).ok);
+  const subiu = agora.nivel > antes.nivel;
+  const tipo = motivo && motivo.tipo;
+  if (!subiu && !novas.length && tipo !== 'plat' && tipo !== 'livro') {
+    if (ganho > 0) toast(`+${fmtNum(ganho)} XP`);
+    if (depois) depois();
+    return;
+  }
+  const nome = motivo && motivo.item ? (motivo.item.nome || motivo.item.titulo) : '';
+  let rotulo, titulo, emblema;
+  if (subiu) {
+    rotulo = 'Subiu de nível';
+    titulo = tituloDe(agora.nivel) !== tituloDe(antes.nivel) ? `Novo título: ${tituloDe(agora.nivel)}` : tituloDe(agora.nivel);
+    emblema = `<span class="anel grande" style="--p:${Math.round(agora.noNivel / agora.precisa * 100)}%"><span><small>NÍVEL</small><b>${agora.nivel}</b></span></span>`;
+  } else if (tipo === 'plat') {
+    rotulo = 'Platina conquistada'; titulo = nome;
+    emblema = `<div class="r-epica"><span class="medalha grande">${ico('trofeu')}</span></div>`;
+  } else if (tipo === 'livro') {
+    rotulo = 'Livro concluído'; titulo = nome;
+    emblema = `<div class="celebra-capa">${capaLivro(motivo.item)}</div>`;
+  } else {
+    rotulo = novas.length > 1 ? 'Conquistas desbloqueadas' : 'Conquista desbloqueada'; titulo = novas[0].nome;
+    emblema = `<div class="r-${novas[0].rar}"><span class="medalha grande">${ico(novas[0].icone)}</span></div>`;
+  }
+  const itens = [];
+  if (subiu && nome) itens.push(`<div class="celebra-item"><span class="xp">${tipo === 'plat' ? 'Platina' : tipo === 'livro' ? 'Lido' : 'Concluído'}</span><span>${esc(nome)}</span></div>`);
+  novas.forEach(c => itens.push(`<div class="celebra-item r-${c.rar}">${medalha(c)}<span><b>${esc(c.nome)}</b> · ${RARIDADES[c.rar][0]} <span class="xp">+${RARIDADES[c.rar][1]}</span></span></div>`));
+  const ch = chefao();
+  if (tipo === 'plat' || tipo === 'livro' || tipo === 'zerado') itens.push(`<div class="celebra-item"><span class="xp" style="color:var(--perigo)">${ch.pct}%</span><span>do chefão Backlog derrotado</span></div>`);
+  const pct = Math.round(agora.noNivel / agora.precisa * 100);
+  $('#celebraCaixa').innerHTML = `
+    <span class="rot-mag">${rotulo}</span>
+    ${emblema}
+    <h2 id="celebraTitulo">${esc(titulo)}</h2>
+    ${ganho > 0 ? `<div class="celebra-ganho">+${fmtNum(ganho)} XP</div>` : ''}
+    ${itens.length ? `<div class="celebra-lista">${itens.join('')}</div>` : ''}
+    <div style="width:100%"><span class="barra xp"><i style="width:${pct}%"></i></span>
+      <div class="legenda"><span>NV ${agora.nivel}</span><span>${fmtNum(agora.noNivel)} / ${fmtNum(agora.precisa)} XP</span></div></div>
+    <button class="btn pri cheio" data-acao="fechar-celebra">Continuar</button>`;
+  aoFecharCelebracao = depois || null;
+  const f = $('#celebra');
+  f.hidden = false;
+  requestAnimationFrame(() => f.classList.add('aberto'));
+  setTimeout(() => { const b = $('#celebraCaixa .btn'); if (b) b.focus(); }, 50);
+}
+function fecharCelebracao() {
+  const f = $('#celebra');
+  f.classList.remove('aberto');
+  setTimeout(() => { f.hidden = true; }, 200);
+  const fn = aoFecharCelebracao; aoFecharCelebracao = null;
+  if (fn) fn();
+}
+// Motivo da celebração a partir da troca de status de um jogo
+const motivoJogo = (j, ant) => j.status === 'Platinado/100%' && ant !== j.status ? { tipo: 'plat', item: j }
+  : j.status === 'Zerado' && !CONCLUIDO.includes(ant) ? { tipo: 'zerado', item: j } : null;
 
 /* =========================================================
    ABA PAINEL
@@ -796,6 +1094,7 @@ function renderPainel() {
   const pagRest = comPag.reduce((s, l) => s + Math.max(0, l.totalPaginas - (l.paginaAtual || 0)), 0);
   const diasL = c.paginasDia > 0 ? pagRest / c.paginasDia : 0;
 
+  const jg = jogador(), ch = chefao();
   const barraMeta = (rot, feito, meta, cls) => {
     const p = meta > 0 ? Math.min(100, Math.round(feito / meta * 100)) : 0;
     return `<div class="meta-anual"><div class="linha"><span>${rot}</span><b>${feito} / ${meta}</b></div><span class="barra ${cls}"><i style="width:${p}%"></i></span></div>`;
@@ -804,6 +1103,9 @@ function renderPainel() {
   $('#conteudo').innerHTML = `<div class="painel-grade">
     ${htmlAvisoBackup()}
     <p class="frase">${esc(fraseIncentivo(platAno, lidosAno))}</p>
+    ${htmlJogador(jg)}
+    ${htmlChefao(ch, semJ, diasL, comHoras.length, pend.length, horasRest, comPag.length, filaL.length, pagRest)}
+    ${htmlProximoAlvo()}
     <section class="bloco duplo"><h2>Jogos</h2><div class="nums">
       ${numBox(conta(J, 'Platinado/100%'), 'Platinados', 'c-plat', { status: 'Platinado/100%' })}
       ${numBox(conta(J, 'Zerado'), 'Zerados', 'c-zer', { status: 'Zerado' })}
@@ -825,12 +1127,104 @@ function renderPainel() {
       ${svgGrafico(ano)}
       <div class="leg-graf"><span><i style="background:var(--pri)"></i>Jogos (zerados/platinados)</span><span><i style="background:var(--ok)"></i>Livros</span></div>
     </section>
-    <section class="bloco"><h2>Previsão do backlog</h2><div class="prev">
-      <div class="prev-item"><b>${duracaoSemanas(semJ)}</b>
-        <p>${comHoras.length} jogos com meta e horas estimadas · ${fmtNum(Math.round(horasRest))} h restantes a ${fmtNum(c.horasSemana)} h/semana.${pend.length > comHoras.length ? ` ${pend.length - comHoras.length} sem horas estimadas ficam de fora.` : ''}</p></div>
-      <div class="prev-item"><b>${diasL > 0 ? duracaoSemanas(diasL / 7) : (comPag.length ? 'nada pendente' : 'sem dados ainda')}</b>
-        <p>Leitura: ${comPag.length} de ${filaL.length} livros com nº de páginas · ${fmtNum(pagRest)} páginas a ${fmtNum(c.paginasDia)} pág./dia.</p></div>
-    </div></section></div>`;
+    </div>`;
+}
+
+/* ---------- Peças da gamificação no Painel ---------- */
+function htmlJogador(jg) {
+  const pct = Math.round(jg.noNivel / jg.precisa * 100), ok = jg.conquistas.filter(c => c.ok).length;
+  return `<a class="jogador largo" href="#perfil" aria-label="Ver perfil e conquistas">
+    <span class="anel" style="--p:${pct}%"><span><small>NV</small><b>${jg.nivel}</b></span></span>
+    <span class="jogador-info"><span class="rot-mag">Jogador · ${fmtNum(jg.xp)} XP</span><strong>${esc(tituloDe(jg.nivel))}</strong>
+      <span class="barra xp"><i style="width:${pct}%"></i></span>
+      <span class="legenda"><b>${fmtNum(jg.noNivel)} / ${fmtNum(jg.precisa)} XP</b><span>faltam ${fmtNum(jg.precisa - jg.noNivel)} p/ NV ${jg.nivel + 1}</span></span></span>
+    <span class="jogador-medalhas"><b>${ok}</b><small>medalhas</small></span></a>`;
+}
+function htmlChefao(ch, semJ, diasL, nComHoras, nPend, horasRest, nComPag, nFilaL, pagRest) {
+  const c = state.config;
+  return `<section class="bloco chefao duplo">
+    <div class="chefao-topo">${ico('caveira', 'ico chefao-ico')}
+      <div><span class="rot-chefe">Chefão · ${ch.fase}</span><h3>O Backlog</h3></div>
+      <div class="chefao-hp"><b>${fmtNum(ch.hp)}</b><small>de ${fmtNum(ch.max)} HP</small></div></div>
+    <span class="barra boss" role="img" aria-label="Vida do chefão: ${100 - ch.pct}%"><i style="width:${ch.max ? 100 - ch.pct : 0}%"></i></span>
+    <div class="legenda"><span><b>${ch.pct}%</b> derrotado</span><span>1 HP = 1 h de jogo ou ${PAG_POR_HP} páginas</span></div>
+    <div class="prev">
+      <div class="prev-item"><small>Jogos derrotados em</small><b>${duracaoSemanas(semJ)}</b>
+        <p>${nComHoras} jogos com meta e horas estimadas · ${fmtNum(Math.round(horasRest))} h restantes a ${fmtNum(c.horasSemana)} h/semana.${nPend > nComHoras ? ` ${nPend - nComHoras} sem horas estimadas ficam de fora.` : ''}</p></div>
+      <div class="prev-item"><small>Leitura derrotada em</small><b>${diasL > 0 ? duracaoSemanas(diasL / 7) : (nComPag ? 'nada pendente' : 'sem dados ainda')}</b>
+        <p>${nComPag} de ${nFilaL} livros com nº de páginas · ${fmtNum(pagRest)} páginas a ${fmtNum(c.paginasDia)} pág./dia.</p></div>
+    </div></section>`;
+}
+function htmlProximoAlvo() {
+  const s = calcularSugestao(), j = s.lista[0];
+  if (!j) return '';
+  return `<section class="bloco alvo"><h2>${ico('alvo', 'ico ico-titulo')}Próximo alvo</h2>
+    <div class="alvo-corpo">${capaJogo(j, 'mini', 'width:48px;height:64px')}
+      <div><strong>${esc(j.nome)}</strong>
+        <small>${j.dificuldade != null ? `Dif. ${j.dificuldade}/10 · ` : ''}${j.horasEstimadas != null ? `~${fmtNum(j.horasEstimadas)} h · ` : ''}<span class="prio-${j.prioridade}">${j.prioridade}</span></small>
+        <small class="xp">vale ${xpAlvoJogo(j)} XP</small></div></div>
+    <div class="acoes-linha" style="margin:12px 0 0"><button class="btn pri" data-acao="sug-comecar" data-id="${j.id}">Começar</button>
+      <button class="btn" data-acao="sugerir">Por quê? · outras</button></div></section>`;
+}
+// XP no rodapé do card de jogo: ganho (concluído) ou quanto vale a meta
+function htmlXpJogo(j) {
+  const ganho = xpGanhoJogo(j);
+  if (ganho) return `<span>${j.conclusao ? `✓ ${fmtData(j.conclusao)} · ` : ''}<b class="xp">+${ganho} XP</b></span>`;
+  if (['Abandonado', 'Não pretendo jogar'].includes(j.status)) return '';
+  return `<span class="xp-alvo">vale ${xpAlvoJogo(j)} XP</span>`;
+}
+
+/* =========================================================
+   ABA PERFIL (nível, títulos e conquistas)
+   ========================================================= */
+let filtroConq = '';
+function renderPerfil() {
+  const jg = jogador(), pct = Math.round(jg.noNivel / jg.precisa * 100), prox = proximoTitulo(jg.nivel);
+  const cq = jg.conquistas, ok = cq.filter(c => c.ok).length;
+  const ordemRar = { lendaria: 0, epica: 1, rara: 2, comum: 3 };
+  const lista = cq.filter(c => !filtroConq || c.rar === filtroConq).sort((a, b) => (b.ok - a.ok) || ordemRar[a.rar] - ordemRar[b.rar]);
+  const chip = (v, rot) => `<button class="fchip ${filtroConq === v ? 'ativo' : ''}" data-acao="filtro-conq" data-v="${v}">${rot}</button>`;
+  const linhaXp = (rot, v) => `<div class="xp-linha"><span>${rot}</span><b class="xp">${fmtNum(v)} XP</b></div>`;
+  const J = state.jogos, L = state.livros;
+  $('#conteudo').innerHTML = `<div class="painel-grade">
+    <section class="bloco perfil-topo largo">
+      <span class="anel grande" style="--p:${pct}%"><span><small>NÍVEL</small><b>${jg.nivel}</b></span></span>
+      <div class="perfil-info">
+        <span class="rot-mag">${fmtNum(jg.xp)} XP no total</span>
+        <h2 class="perfil-titulo">${esc(tituloDe(jg.nivel))}</h2>
+        <p class="ajuda">${prox ? `Próximo título no NV ${prox[0]}: <b>${esc(prox[1])}</b>` : 'Você chegou ao título máximo.'}</p>
+        <span class="barra xp"><i style="width:${pct}%"></i></span>
+        <span class="legenda"><b>${fmtNum(jg.noNivel)} / ${fmtNum(jg.precisa)} XP</b><span>faltam ${fmtNum(jg.precisa - jg.noNivel)} p/ NV ${jg.nivel + 1}</span></span>
+      </div>
+    </section>
+    <section class="bloco"><h2>De onde vem seu XP</h2>
+      ${linhaXp(`Jogos concluídos (${J.filter(j => CONCLUIDO.includes(j.status)).length})`, jg.xpJogos)}
+      ${linhaXp(`Livros lidos (${L.filter(l => l.status === 'Lido').length})`, jg.xpLivros)}
+      ${linhaXp(`Conquistas (${ok})`, jg.xpConq)}
+      <div class="xp-linha total"><span>Total</span><b class="xp">${fmtNum(jg.xp)} XP</b></div>
+    </section>
+    <section class="bloco"><h2>Como ganhar XP</h2>
+      <div class="xp-linha"><span>Platinar / 100%</span><b>100 + 30 × dificuldade</b></div>
+      <div class="xp-linha"><span>Zerar</span><b>40 + 15 × dificuldade</b></div>
+      <div class="xp-linha"><span>Livro Leve · Média · Densa</span><b>80 · 120 · 180</b></div>
+      <div class="xp-linha"><span>Páginas do livro</span><b>+1 a cada 10</b></div>
+      <div class="xp-linha"><span>Prioridade Alta</span><b>+25%</b></div>
+      <div class="xp-linha"><span>Versão escolhida de duplicado</span><b>+50</b></div>
+      <p class="ajuda" style="margin-top:8px">Abandonar nunca tira XP. Dificuldade vazia conta como 5.</p>
+    </section>
+    <section class="bloco"><h2>Títulos</h2><ol class="titulos">
+      ${TITULOS.map(([n, t]) => `<li class="${jg.nivel >= n ? 'ok' : ''}${tituloDe(jg.nivel) === t ? ' atual' : ''}"><span class="num-tit">NV ${n}</span>${esc(t)}</li>`).join('')}
+    </ol></section>
+    <section class="bloco largo"><h2>Conquistas · ${ok} de ${cq.length}</h2>
+      <div class="filtro-chips">${chip('', 'Todas')}${chip('lendaria', 'Lendárias')}${chip('epica', 'Épicas')}${chip('rara', 'Raras')}${chip('comum', 'Comuns')}</div>
+      <div class="medalhas">${lista.map(c => `<div class="medalha-card r-${c.rar}${c.ok ? '' : ' bloq'}">
+        ${medalha(c)}
+        <b>${esc(c.nome)}</b><small>${esc(c.desc)}</small>
+        <span class="rar">${RARIDADES[c.rar][0]} · ${c.ok ? (c.data ? fmtData(c.data) : 'desbloqueada') : `${fmtNum(c.atual)} / ${fmtNum(c.alvo)}`}</span>
+        ${c.ok ? '' : `<span class="barra"><i style="width:${Math.round(c.atual / c.alvo * 100)}%"></i></span>`}
+      </div>`).join('')}</div>
+    </section>
+  </div>`;
 }
 
 /* =========================================================
@@ -851,12 +1245,12 @@ function renderJogos() {
   const n = qtdJogando();
   $('#conteudo').innerHTML = `
     <div class="acoes-linha">
-      <button class="btn pri" data-acao="novo-jogo">＋ Adicionar</button>
-      <button class="btn" data-acao="sugerir">🎲 Sugerir próximo</button>
-      <button class="btn" data-acao="importar-texto">📋 Colar lista</button>
-      ${nuvem.usuario ? '<button class="btn" data-acao="abrir-sync">🔄 Steam / PSN</button>' : ''}
+      <button class="btn pri" data-acao="novo-jogo">${ico('mais')}Adicionar</button>
+      <button class="btn" data-acao="sugerir">${ico('alvo')}Próximo alvo</button>
+      <button class="btn" data-acao="importar-texto">${ico('colar')}Colar lista</button>
+      ${nuvem.usuario ? `<button class="btn" data-acao="abrir-sync">${ico('sync')}Steam / PSN</button>` : ''}
     </div>
-    ${n > 2 ? `<div class="alerta"><b>Foco:</b> você tem ${n} jogos em “Jogando”. Termine um antes de começar outro.</div>` : ''}
+    ${n > 2 ? `<div class="alerta"><b>Regra do foco:</b> você tem ${n} jogos em “Jogando”. Termine um antes de começar outro.</div>` : ''}
     <div class="busca-linha">
       <input type="search" id="buscaJogo" placeholder="Buscar jogo…" value="${esc(filtroJ.busca)}" autocomplete="off">
       <button class="btn" data-acao="toggle-filtros-j">Filtros<span id="contFiltrosJ"></span></button>
@@ -904,7 +1298,7 @@ function cardJogo(j) {
     else chips.push(`<button class="chip dup" data-acao="escolher-versao" data-grupo="${j.grupo}">Duplicado · escolher versão</button>`);
   }
   const est = '<span class="est">estimativa</span>';
-  const metaTxt = j.meta === 'Platinar' ? '🏆 Platinar' : j.meta === '100% conquistas' ? '🏆 100%' : '🏁 Só zerar';
+  const metaTxt = j.meta === 'Platinar' ? '<span class="meta-plat">Platinar</span>' : j.meta === '100% conquistas' ? '<span class="meta-plat">100% conquistas</span>' : 'Só zerar';
   return `<article class="card" data-acao="editar-jogo" data-id="${j.id}">
     ${capaJogo(j)}
     <div class="card-corpo">
@@ -917,7 +1311,7 @@ function cardJogo(j) {
         <span class="prio-${j.prioridade}">${j.prioridade}</span>
       </div>
       ${semBarra ? '' : `<span class="barra"><i style="width:${p}%"></i></span>`}
-      <div class="legenda"><span>${legendaJogo(j)}</span>${j.conclusao && CONCLUIDO.includes(j.status) ? `<span>✓ ${fmtData(j.conclusao)}</span>` : ''}</div>
+      <div class="legenda"><span>${legendaJogo(j)}</span>${htmlXpJogo(j)}</div>
       ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
     </div></article>`;
 }
@@ -1011,7 +1405,7 @@ function salvarFormJogo(form, j, novo) {
   const f = Object.fromEntries(new FormData(form));
   const nome = (f.nome || '').trim();
   if (!nome) { toast('Informe o nome do jogo.', 'erro'); form.elements.nome.focus(); return; }
-  const statusAnt = novo ? null : j.status;
+  const statusAnt = novo ? null : j.status, antes = jogador();
   Object.assign(j, {
     nome, plataforma: f.plataforma, status: f.status, meta: f.meta, prioridade: f.prioridade, online: f.online,
     dificuldade: limitar(num(f.dificuldade), 1, 10),
@@ -1038,6 +1432,7 @@ function salvarFormJogo(form, j, novo) {
   salvar(); fecharSheet(); render();
   toast(novo ? 'Jogo adicionado.' : 'Alterações salvas.');
   avisarFoco(statusAnt, j.status);
+  celebrar(antes, jogador(), motivoJogo(j, statusAnt));
 }
 function excluirJogo(id) {
   const j = acharJogo(id); if (!j) return;
@@ -1078,7 +1473,7 @@ function calcularSugestao() {
 }
 function mostrarSugestao() {
   if (!sugestao.lista.length) {
-    abrirSheet('Sugestão', '<div class="vazio">Nenhum jogo “Na fila”. Adicione jogos ou mude algum status para “Na fila”.</div>'); return;
+    abrirSheet('Próximo alvo', '<div class="vazio">Nenhum jogo “Na fila”. Adicione jogos ou mude algum status para “Na fila”.</div>'); return;
   }
   const j = sugestao.lista[sugestao.idx % sugestao.lista.length], u = sugestao.ultimo, d = j.dificuldade;
   let motivo = `Prioridade ${j.prioridade.toLowerCase()}.`;
@@ -1087,12 +1482,14 @@ function mostrarSugestao() {
   else if (!u) motivo += ' Ainda não há jogo concluído com dificuldade registrada, então começo pelos mais acessíveis.';
   if (j.online === ONLINE[1]) motivo += ' Atenção: tem troféus online — confira se os servidores estão ativos.';
   const total = sugestao.lista.length, pos = sugestao.idx % total + 1;
-  abrirSheet('Próximo jogo', `
+  abrirSheet('Próximo alvo', `
+    <p class="rot-mag" style="margin:0 0 10px">Missão recomendada</p>
     <div class="sugestao">${capaJogo(j)}
       <div><h3 style="font-size:17px">${esc(j.nome)}</h3><div class="info" style="margin-top:6px">
-        ${d != null ? `<span>Dif. ${d}/10</span>` : ''}${j.horasEstimadas != null ? `<span>~${j.horasEstimadas} h</span>` : ''}<span class="prio-${j.prioridade}">${j.prioridade}</span></div></div></div>
+        ${d != null ? `<span>Dif. ${d}/10</span>` : ''}${j.horasEstimadas != null ? `<span>~${j.horasEstimadas} h</span>` : ''}<span class="prio-${j.prioridade}">${j.prioridade}</span></div>
+        <div class="xp" style="margin-top:4px">vale ${xpAlvoJogo(j)} XP</div></div></div>
     <p class="motivo">${esc(motivo)}</p>
-    <div class="acoes-linha"><button class="btn pri" data-acao="sug-comecar" data-id="${j.id}">Começar agora</button>
+    <div class="acoes-linha"><button class="btn pri" data-acao="sug-comecar" data-id="${j.id}">Aceitar e começar</button>
       <button class="btn" data-acao="sug-outra">Outra sugestão (${pos}/${total})</button></div>`);
 }
 
@@ -1180,7 +1577,7 @@ function cardLendo(l) {
     <h3>${esc(l.titulo)}</h3><div class="sub">${esc(l.autor || 'Autor a definir')} · ${esc(l.formato)}</div></div></div>
     <div style="margin-top:12px"><span class="barra ok"><i style="width:${p}%"></i></span>
     <div class="legenda"><span>${l.totalPaginas ? `Página ${l.paginaAtual || 0} de ${l.totalPaginas} · ${p}%` : 'Informe o total de páginas para ver o progresso'}</span>
-      <span>${dias != null ? (dias ? `~${dias} dia(s) no seu ritmo` : 'Concluído!') : ''}</span></div></div>
+      <span>${dias ? `~${dias} dia(s) no seu ritmo · ` : ''}<b class="xp">vale ${xpLivro(l)} XP</b></span></div></div>
     <form class="form-pagina" data-pagina="${l.id}">
       ${campo('Página atual', `<input type="number" id="pg-${l.id}" min="0" inputmode="numeric" value="${l.paginaAtual || 0}">`)}
       ${campo('Total', `<input type="number" id="tot-${l.id}" min="1" inputmode="numeric" value="${l.totalPaginas ?? ''}" placeholder="—">`)}
@@ -1310,7 +1707,8 @@ function cardLivro(l) {
       <div class="info"><span>${esc(l.categoria)}</span><span class="dif-${l.dificuldade}">${esc(l.dificuldade)}</span>
         ${l.totalPaginas ? `<span>${l.totalPaginas} pág.</span>` : ''}${l.avaliacao ? `<span class="estrelas-txt">${'★'.repeat(l.avaliacao)}</span>` : ''}</div>
       ${l.totalPaginas && l.status !== 'Na fila' ? `<span class="barra ok"><i style="width:${p}%"></i></span>` : ''}
-      ${l.status === 'Lido' && l.fim ? `<div class="legenda"><span>Lido em ${fmtData(l.fim)}</span></div>` : ''}
+      ${l.status === 'Lido' ? `<div class="legenda"><span>${l.fim ? `Lido em ${fmtData(l.fim)}` : 'Lido'}</span><span class="xp">+${xpLivro(l)} XP</span></div>`
+        : ['Lendo', 'Na fila'].includes(l.status) ? `<div class="legenda"><span></span><span class="xp-alvo">vale ${xpLivro(l)} XP</span></div>` : ''}
     </div></article>`;
 }
 
@@ -1389,8 +1787,10 @@ function salvarPagina(id) {
   if (l.totalPaginas && l.paginaAtual > l.totalPaginas) l.paginaAtual = l.totalPaginas;
   if (!l.inicio) l.inicio = hoje();
   salvar();
-  if (l.totalPaginas && l.paginaAtual >= l.totalPaginas && confirm(`Você chegou ao fim de “${l.titulo}”. Marcar como lido?`)) {
-    aplicarStatusLivro(l, 'Lido'); salvar(); render(); abrirAvaliacao(l); return;
+  if (l.totalPaginas && l.paginaAtual >= l.totalPaginas && l.status !== 'Lido' && confirm(`Você chegou ao fim de “${l.titulo}”. Marcar como lido?`)) {
+    const antes = jogador();
+    aplicarStatusLivro(l, 'Lido'); salvar(); render();
+    celebrar(antes, jogador(), { tipo: 'livro', item: l }, () => abrirAvaliacao(l)); return;
   }
   render(); toast('Progresso salvo.');
 }
@@ -1920,6 +2320,7 @@ function novoJogoSync(it) {
 }
 function aplicarPlano() {
   const p = planoSync; if (!p) return;
+  const antes = jogador();
   let atualizados = 0, criados = 0, concluidos = 0, ignorados = 0;
   p.atualizar.forEach(({ j, it }) => { if (aplicarDadosSync(j, it, p.campo)) concluidos++; atualizados++; });
   $$('[data-sync]').forEach(sel => {
@@ -1940,6 +2341,7 @@ function aplicarPlano() {
   planoSync = null;
   salvar(); fecharSheet(); render();
   toast(`${atualizados} atualizado(s), ${criados} novo(s)${concluidos ? `, ${concluidos} concluído(s)` : ''}${ignorados ? `, ${ignorados} ignorado(s)` : ''}.`);
+  celebrar(antes, jogador());
 }
 
 /* =========================================================
@@ -1947,6 +2349,8 @@ function aplicarPlano() {
    ========================================================= */
 const ACOES = {
   'fechar-sheet': () => fecharSheet(),
+  'fechar-celebra': () => fecharCelebracao(),
+  'filtro-conq': el => { filtroConq = el.dataset.v; renderPerfil(); },
   'alternar-tema': () => { state.config.tema = state.config.tema === 'claro' ? 'escuro' : 'claro'; aplicarTema(); salvar(); if (abaAtual === 'config') render(); },
   'tema': el => { state.config.tema = el.dataset.v; aplicarTema(); salvar(); render(); },
   'ir-filtro': el => {
@@ -1961,8 +2365,9 @@ const ACOES = {
   'status-jogo': el => menuStatus('jogo', el.dataset.id),
   'set-status-jogo': el => {
     const j = acharJogo(el.dataset.id); if (!j) return;
-    const ant = aplicarStatusJogo(j, el.dataset.s);
+    const antes = jogador(), ant = aplicarStatusJogo(j, el.dataset.s);
     salvar(); fecharSheet(); render(); toast(`Status: ${j.status}`); avisarFoco(ant, j.status);
+    celebrar(antes, jogador(), motivoJogo(j, ant));
   },
   'toggle-filtros-j': () => { filtroJ.abertos = !filtroJ.abertos; $('#filtrosJ').hidden = !filtroJ.abertos; },
   'limpar-filtros-j': () => { Object.assign(filtroJ, { busca: '', plataforma: '', status: '', meta: '', prioridade: '', ordem: 'prioridade' }); renderJogos(); },
@@ -1988,16 +2393,19 @@ const ACOES = {
   'status-livro': el => menuStatus('livro', el.dataset.id),
   'set-status-livro': el => {
     const l = acharLivro(el.dataset.id); if (!l) return;
-    const virouLido = aplicarStatusLivro(l, el.dataset.s);
-    salvar(); render();
-    if (virouLido) abrirAvaliacao(l); else { fecharSheet(); toast(`Status: ${l.status}`); }
+    const antes = jogador(), virouLido = aplicarStatusLivro(l, el.dataset.s);
+    salvar(); render(); fecharSheet();
+    if (virouLido) celebrar(antes, jogador(), { tipo: 'livro', item: l }, () => abrirAvaliacao(l));
+    else { toast(`Status: ${l.status}`); celebrar(antes, jogador()); }
   },
   'vista-livros': el => { filtroL.vista = el.dataset.v; renderLivros(); },
   'subir': el => moverLivro(el.dataset.id, -1),
   'descer': el => moverLivro(el.dataset.id, 1),
   'avaliar': el => {
     const l = acharLivro(el.dataset.id); if (!l) return;
+    const antes = jogador();
     l.avaliacao = Number(el.dataset.n); salvar(); fecharSheet(); render(); toast(`Nota ${l.avaliacao}/5 salva.`);
+    celebrar(antes, jogador());
   },
   // Configurações
   'exportar-backup': () => exportarBackup(),
@@ -2027,7 +2435,10 @@ document.addEventListener('submit', e => {
   if (f) { e.preventDefault(); salvarPagina(f.dataset.pagina); }
 });
 $('#sheetFundo').addEventListener('click', e => { if (e.target.id === 'sheetFundo') fecharSheet(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheetFundo').hidden) fecharSheet(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!$('#celebra').hidden) fecharCelebracao(); else if (!$('#sheetFundo').hidden) fecharSheet();
+});
 $('#arquivoBackup').addEventListener('change', e => { const a = e.target.files && e.target.files[0]; if (a) importarBackup(a); });
 window.addEventListener('hashchange', () => irPara(location.hash.slice(1)));
 
