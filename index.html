@@ -1,0 +1,1424 @@
+<!doctype html>
+<html lang="pt-BR" data-tema="escuro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1014">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Estante">
+<title>Minha Estante — Jogos e Livros</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%238aa4ff'/%3E%3Cpath d='M16 14h10v36H16zM29 14h8v36h-8zM40 17l7-2 8 33-7 2z' fill='%230e1014'/%3E%3C/svg%3E">
+<style>
+/* =========================================================
+   TEMA — variáveis de cor (escuro é o padrão)
+   ========================================================= */
+:root{
+  --bg:#0e1014; --bg2:#151821; --card:#1a1e28; --card2:#232838; --borda:#2a3041;
+  --txt:#e9ecf3; --txt2:#9ca5b7; --txt3:#6c7488;
+  --pri:#8aa4ff; --pri-txt:#0e1014; --roxo:#b48cff;
+  --ok:#3fbf86; --aviso:#e6a93c; --perigo:#ef5b52;
+  --raio:16px; --sombra:0 10px 30px rgba(0,0,0,.4);
+  --nav-h:64px;
+  color-scheme:dark;
+}
+[data-tema="claro"]{
+  --bg:#f2f3f7; --bg2:#ffffff; --card:#ffffff; --card2:#eceff6; --borda:#dce0ea;
+  --txt:#161a23; --txt2:#556074; --txt3:#8a92a3;
+  --pri:#3d5bdb; --pri-txt:#ffffff; --roxo:#7c4dde;
+  --ok:#1b9660; --aviso:#a86d08; --perigo:#d23b33;
+  --sombra:0 8px 24px rgba(20,30,60,.10);
+  color-scheme:light;
+}
+
+/* =========================================================
+   BASE
+   ========================================================= */
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+body.travado{overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+h1,h2,h3{margin:0;line-height:1.2}
+a{color:var(--pri)}
+
+/* Cabeçalho */
+.topo{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--borda);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.topo-int{max-width:760px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.topo h1{font-size:20px;font-weight:750;letter-spacing:-.01em}
+.topo small{color:var(--txt3);font-size:12px}
+
+main{max-width:760px;margin:0 auto;padding:14px 16px calc(var(--nav-h) + 28px + env(safe-area-inset-bottom))}
+
+/* Navegação inferior */
+.abas{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--bg2);border-top:1px solid var(--borda);padding-bottom:env(safe-area-inset-bottom)}
+.abas-int{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);height:var(--nav-h)}
+.aba{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--txt3);font-size:11.5px;font-weight:600;transition:color .15s}
+.aba svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.aba.ativa{color:var(--pri)}
+.aba.ativa svg{transform:translateY(-1px)}
+
+/* Blocos e títulos */
+.bloco{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);padding:14px;margin-bottom:14px}
+.bloco>h2,.titulo-sec{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--txt2);font-weight:700;margin-bottom:10px}
+.titulo-sec{margin:18px 2px 10px}
+.ajuda{color:var(--txt2);font-size:13px;margin:0}
+.vazio{text-align:center;color:var(--txt2);padding:28px 12px;border:1px dashed var(--borda);border-radius:var(--raio)}
+
+/* Botões */
+.btn{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--borda);background:var(--card2);font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:transform .08s,background .15s,opacity .15s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--pri);color:var(--pri-txt);border-color:transparent}
+.btn.perigo{background:transparent;color:var(--perigo);border-color:color-mix(in srgb,var(--perigo) 45%,transparent)}
+.btn.link{background:none;border:none;color:var(--pri);padding:0 6px}
+.btn.mini{min-height:34px;padding:0 12px;font-size:13px;border-radius:10px}
+.btn.cheio{width:100%}
+.btn:disabled{opacity:.4;cursor:default}
+.acoes-linha{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.acoes-linha .btn{flex:1 1 auto}
+.icone-btn{width:40px;height:40px;border-radius:10px;border:1px solid var(--borda);background:var(--card2);display:inline-flex;align-items:center;justify-content:center;font-size:18px}
+
+/* Campos */
+input,select,textarea{width:100%;min-height:44px;border-radius:10px;border:1px solid var(--borda);background:var(--bg2);padding:10px 12px;font-size:16px;outline:none;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--pri)}
+textarea{resize:vertical;min-height:90px}
+input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--pri);flex:none}
+.form{display:grid;gap:12px}
+.campo{display:grid;gap:5px;min-width:0}
+.rotulo{font-size:12.5px;color:var(--txt2);font-weight:650}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media (max-width:380px){.g3{grid-template-columns:1fr 1fr}}
+.check{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--txt2);cursor:pointer}
+.check-mini{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--aviso);cursor:pointer}
+.check-mini input{width:16px;height:16px}
+
+/* Busca e filtros */
+.busca-linha{display:flex;gap:8px;margin-bottom:10px}
+.busca-linha input{flex:1}
+.filtros{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;padding:12px;background:var(--card);border:1px solid var(--borda);border-radius:var(--raio)}
+.filtros .largo{grid-column:1/-1}
+.contagem{font-size:12.5px;color:var(--txt3);margin:4px 2px 10px}
+.badge-num{background:var(--pri);color:var(--pri-txt);border-radius:99px;font-size:11px;padding:1px 7px;margin-left:4px}
+
+/* Alertas */
+.alerta{padding:11px 13px;border-radius:12px;margin-bottom:12px;font-size:13.5px;background:color-mix(in srgb,var(--aviso) 13%,transparent);color:var(--aviso);border:1px solid color-mix(in srgb,var(--aviso) 30%,transparent)}
+.aviso-backup{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border-radius:12px;margin-bottom:14px;font-size:12.5px;color:var(--txt2);background:var(--card);border:1px dashed var(--borda)}
+.frase{font-size:15px;color:var(--txt2);margin:2px 2px 14px;font-style:italic}
+
+/* Números do painel */
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.nums.tres{grid-template-columns:repeat(3,1fr)}
+.num{background:var(--card2);border-radius:12px;padding:10px 6px;text-align:center;border:none;width:100%}
+.num b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.num span{font-size:11.5px;color:var(--txt2)}
+.num.c-plat b{color:var(--roxo)} .num.c-zer b{color:var(--ok)} .num.c-jog b{color:var(--pri)}
+
+/* Barra de progresso */
+.barra{display:block;height:7px;background:var(--card2);border-radius:99px;overflow:hidden}
+.barra i{display:block;height:100%;background:linear-gradient(90deg,var(--pri),var(--roxo));border-radius:99px;transition:width .5s ease}
+.barra.ok i{background:linear-gradient(90deg,var(--ok),#7ad9b0)}
+.legenda{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--txt2);margin-top:5px}
+.meta-anual{margin-bottom:12px}
+.meta-anual:last-child{margin-bottom:0}
+.meta-anual .linha{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}
+
+/* Cards de jogo */
+.lista{display:grid;gap:10px}
+.card{display:grid;grid-template-columns:58px 1fr;gap:12px;padding:12px;background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);cursor:pointer;text-align:left;width:100%;animation:entra .25s ease both}
+.card:active{transform:scale(.995)}
+.capa{height:78px;border-radius:10px;display:flex;flex-direction:column;justify-content:space-between;padding:6px 7px;font-weight:800;color:#fff;overflow:hidden;position:relative}
+.capa .plat{font-size:10.5px;letter-spacing:.04em;opacity:.9}
+.capa .ini{font-size:20px;letter-spacing:-.02em}
+.capa-PS4{background:linear-gradient(160deg,#3b7cf0,#14358a)}
+.capa-PS5{background:linear-gradient(160deg,#fbfbfd,#b8bdc8);color:#1b1f27}
+.capa-Steam{background:linear-gradient(160deg,#2a475e,#121821);color:#c7d5e0}
+.card-corpo{min-width:0}
+.card-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.card h3{font-size:15.5px;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sub{font-size:12.5px;color:var(--txt2);margin-top:2px}
+.info{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12.5px;color:var(--txt2);margin-bottom:8px}
+.est{font-size:10px;border:1px dashed var(--aviso);color:var(--aviso);border-radius:4px;padding:0 4px;margin-left:3px;vertical-align:1px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-size:11.5px;padding:3px 9px;border-radius:99px;background:var(--card2);color:var(--txt2);border:none;font-weight:600}
+.chip.aviso{color:var(--aviso)} .chip.perigo{color:var(--perigo)} .chip.dup{color:var(--roxo)} .chip.ok{color:var(--ok)}
+button.chip{cursor:pointer}
+
+/* Selos de status */
+.selo{flex:none;font-size:12px;font-weight:700;padding:4px 10px;border-radius:99px;border:none;white-space:nowrap}
+.st-fila{background:color-mix(in srgb,var(--txt2) 16%,transparent);color:var(--txt2)}
+.st-jogando{background:color-mix(in srgb,var(--pri) 18%,transparent);color:var(--pri)}
+.st-zerado{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.st-plat{background:color-mix(in srgb,var(--roxo) 20%,transparent);color:var(--roxo)}
+.st-aband{background:color-mix(in srgb,var(--perigo) 15%,transparent);color:var(--perigo)}
+.st-nao{background:transparent;color:var(--txt3);border:1px solid var(--borda)}
+.prio-Alta{color:var(--perigo);font-weight:700}
+.prio-Média{color:var(--aviso);font-weight:700}
+.prio-Baixa{color:var(--txt3);font-weight:700}
+
+/* Mini cards (painel) */
+.mini-lista{display:grid;gap:8px}
+.mini-card{display:flex;gap:10px;align-items:center;width:100%;text-align:left;background:var(--card2);border:none;border-radius:12px;padding:8px;text-decoration:none;color:inherit}
+.capa.mini{width:44px;height:52px;flex:none;font-size:10px;justify-content:center;align-items:center}
+.capa.livro{background:linear-gradient(160deg,#c9894a,#6d3f1c)}
+.mini-info{flex:1;min-width:0;display:grid;gap:5px}
+.mini-info strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini-info small{font-size:12px;color:var(--txt2)}
+
+/* Gráfico */
+.grafico{width:100%;height:auto;display:block}
+.grafico .b-jogo{fill:var(--pri)} .grafico .b-livro{fill:var(--ok)}
+.grafico text{fill:var(--txt3);font-size:9px;font-family:inherit}
+.grafico .valor{fill:var(--txt2);font-size:8.5px;font-weight:700}
+.grafico line{stroke:var(--borda);stroke-width:1}
+.leg-graf{display:flex;gap:14px;font-size:12px;color:var(--txt2);margin-top:6px}
+.leg-graf i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* Previsão */
+.prev{display:grid;gap:10px}
+.prev-item{background:var(--card2);border-radius:12px;padding:11px 12px}
+.prev-item b{font-size:17px}
+.prev-item p{margin:3px 0 0;font-size:12.5px;color:var(--txt2)}
+
+/* Livros */
+.lendo-card{background:linear-gradient(150deg,color-mix(in srgb,var(--pri) 14%,var(--card)),var(--card));border:1px solid color-mix(in srgb,var(--pri) 35%,var(--borda));border-radius:var(--raio);padding:14px;margin-bottom:12px;animation:entra .25s ease both}
+.lendo-card .rotulo-lendo{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--pri);font-weight:800}
+.lendo-card h3{font-size:18px;margin:4px 0 2px}
+.form-pagina{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:12px}
+.form-pagina .btn{height:44px}
+.segmentado{display:grid;grid-template-columns:1fr 1fr;background:var(--card2);border-radius:12px;padding:4px;margin-bottom:12px}
+.segmentado button{min-height:38px;border:none;background:transparent;border-radius:9px;font-weight:650;color:var(--txt2)}
+.segmentado button.ativo{background:var(--card);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.ordem{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.ordem-item{display:grid;grid-template-columns:34px 24px 1fr auto;align-items:center;gap:6px;background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:6px 8px 6px 2px;transition:box-shadow .15s,border-color .15s}
+.alca{touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;height:48px;font-size:20px;color:var(--txt3);user-select:none;-webkit-user-select:none}
+.pos{font-weight:800;color:var(--txt3);text-align:center;font-size:14px}
+.ordem-info{min-width:0;cursor:pointer;padding:4px 0}
+.ordem-info strong{display:block;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ordem-info small{font-size:12px;color:var(--txt2)}
+.ordem-info .chips{margin-top:4px}
+.setas{display:flex;flex-direction:column;gap:4px}
+.setas button{width:40px;height:30px;border-radius:8px;background:var(--card2);border:1px solid var(--borda);font-size:12px;color:var(--txt2)}
+.setas button:disabled{opacity:.3}
+.arrastando{box-shadow:var(--sombra);border-color:var(--pri);position:relative;z-index:2;background:var(--card2)}
+.em-arraste{user-select:none;-webkit-user-select:none}
+.em-arraste .aviso-denso{display:none}
+.aviso-denso{font-size:12.5px;color:var(--aviso);padding:6px 10px;border-left:3px solid var(--aviso);background:color-mix(in srgb,var(--aviso) 9%,transparent);border-radius:6px}
+.dif-Leve{color:var(--ok)} .dif-Média{color:var(--aviso)} .dif-Densa{color:var(--perigo)}
+.estrelas-txt{color:#f2b84b;letter-spacing:1px}
+
+/* Folha (modal inferior) */
+.sheet-fundo{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;z-index:50;opacity:0;transition:opacity .2s}
+.sheet-fundo.aberto{opacity:1}
+.sheet{background:var(--bg2);width:100%;max-width:620px;max-height:92vh;border-radius:20px 20px 0 0;display:flex;flex-direction:column;transform:translateY(40px);transition:transform .22s ease;padding-bottom:env(safe-area-inset-bottom)}
+.aberto .sheet{transform:none}
+@media (min-width:700px){.sheet-fundo{align-items:center}.sheet{border-radius:20px;max-height:86vh}}
+.sheet-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--borda)}
+.sheet-cab h2{font-size:17px}
+.sheet-corpo{overflow:auto;padding:14px 16px 22px;overscroll-behavior:contain}
+.menu-opcoes{display:grid;gap:6px}
+.opcao{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:12px;border:1px solid var(--borda);background:var(--card);text-align:left;font-weight:600;width:100%}
+.opcao.atual{border-color:var(--pri)}
+.ponto{width:10px;height:10px;border-radius:50%;background:currentColor;flex:none}
+.estrelas{display:flex;justify-content:center;gap:6px;margin:16px 0}
+.estrela{width:52px;height:52px;border-radius:14px;border:1px solid var(--borda);background:var(--card);font-size:26px;color:#f2b84b}
+.estrela.on{background:color-mix(in srgb,#f2b84b 18%,var(--card))}
+.resumo{font-size:13px;color:var(--txt2);background:var(--card);border-radius:10px;padding:10px 12px;min-height:40px}
+.sugestao{background:var(--card);border:1px solid var(--borda);border-radius:var(--raio);padding:12px;display:grid;grid-template-columns:58px 1fr;gap:12px;margin-bottom:12px}
+.motivo{font-size:13.5px;color:var(--txt2);margin:0 0 14px}
+
+/* Configurações */
+.cfg-linha{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 0}
+.cfg-linha+.cfg-linha{border-top:1px solid var(--borda)}
+.cfg-linha input{width:110px;text-align:center}
+.cfg-linha span{font-size:14px}
+.cfg-linha small{display:block;color:var(--txt3);font-size:12px}
+.grade-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* Aviso flutuante */
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:var(--txt);color:var(--bg);padding:11px 16px;border-radius:12px;font-size:14px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:60;max-width:calc(100% - 32px);box-shadow:var(--sombra);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.erro{background:var(--perigo);color:#fff}
+.toast.aviso{background:var(--aviso);color:#1a1205}
+
+@keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="topo-int">
+    <div><h1 id="tituloAba">Painel</h1><small>Minha Estante</small></div>
+    <button class="icone-btn" data-acao="alternar-tema" aria-label="Alternar tema" id="btnTema">◐</button>
+  </div>
+</header>
+
+<main id="conteudo"></main>
+
+<nav class="abas" aria-label="Navegação principal">
+  <div class="abas-int">
+    <a class="aba" href="#painel" data-aba="painel"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Painel</a>
+    <a class="aba" href="#jogos" data-aba="jogos"><svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16.5" cy="11.5" r=".6"/><circle cx="18" cy="13.5" r=".6"/></svg>Jogos</a>
+    <a class="aba" href="#livros" data-aba="livros"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5v17H6a2 2 0 0 0-2 1V5z"/><path d="M20 5a2 2 0 0 0-2-2h-5v17h5a2 2 0 0 1 2 1V5z"/></svg>Livros</a>
+    <a class="aba" href="#config" data-aba="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</a>
+  </div>
+</nav>
+
+<!-- Folha (modal) reutilizada por todos os formulários e menus -->
+<div class="sheet-fundo" id="sheetFundo" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitulo">
+    <div class="sheet-cab"><h2 id="sheetTitulo"></h2><button class="icone-btn" data-acao="fechar-sheet" aria-label="Fechar">✕</button></div>
+    <div class="sheet-corpo" id="sheetCorpo"></div>
+  </div>
+</div>
+
+<input type="file" id="arquivoBackup" accept=".json,application/json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+// Escapa texto para inserir em HTML com segurança
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+// Data de hoje no formato AAAA-MM-DD (fuso local)
+const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const fmtData = iso => iso ? iso.split('-').reverse().join('/') : '—';
+const anoDe = iso => iso ? Number(iso.slice(0, 4)) : null;
+const mesDe = iso => Number(iso.slice(5, 7)) - 1;
+// Normaliza texto para busca/comparação (sem acentos, minúsculo)
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const num = v => { if (v === '' || v == null) return null; const n = Number(String(v).replace(',', '.')); return Number.isFinite(n) ? n : null; };
+const limitar = (v, a, b) => v == null ? null : Math.min(b, Math.max(a, Math.round(v)));
+const positivo = v => v == null ? null : Math.max(0, v);
+const fmtNum = n => Number(n || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+const diasDesde = iso => iso ? Math.floor((Date.now() - Date.parse(iso)) / 864e5) : null;
+const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+
+/* =========================================================
+   CONSTANTES DO DOMÍNIO
+   ========================================================= */
+const PLATAFORMAS = ['PS4', 'PS5', 'Steam'];
+const STATUS_JOGO = ['Na fila', 'Jogando', 'Zerado', 'Platinado/100%', 'Abandonado', 'Não pretendo jogar'];
+const METAS = [['Só zerar', 'Só zerar'], ['Platinar', 'Platinar (PlayStation)'], ['100% conquistas', '100% conquistas (Steam)']];
+const PRIORIDADES = ['Alta', 'Média', 'Baixa'];
+const ONLINE = ['Não tem', 'Tem — verificar se servidores estão ativos', 'Impossível platinar'];
+const CATEGORIAS = ['Filosofia', 'Literatura', 'Outro'];
+const DIFS_LIVRO = ['Leve', 'Média', 'Densa'];
+const STATUS_LIVRO = ['Lendo', 'Na fila', 'Lido', 'Abandonado'];
+const FORMATOS = ['Físico', 'Audiolivro', 'Digital'];
+const CONCLUIDO = ['Zerado', 'Platinado/100%'];
+const PRI_IDX = { 'Alta': 0, 'Média': 1, 'Baixa': 2 };
+const STATUS_CLASSE = {
+  'Na fila': 'st-fila', 'Jogando': 'st-jogando', 'Zerado': 'st-zerado', 'Platinado/100%': 'st-plat',
+  'Abandonado': 'st-aband', 'Não pretendo jogar': 'st-nao', 'Lendo': 'st-jogando', 'Lido': 'st-zerado'
+};
+
+/* =========================================================
+   MODELOS PADRÃO
+   ========================================================= */
+const configPadrao = () => ({ horasSemana: 7, paginasDia: 20, metaPlatinas: 6, metaLivros: 12, tema: 'escuro' });
+const jogoPadrao = () => ({
+  id: uid(), nome: '', plataforma: 'PS4', status: 'Na fila', meta: 'Platinar', dificuldade: null,
+  horasEstimadas: null, horasJogadas: 0, progresso: 0, prioridade: 'Média', online: ONLINE[0],
+  inicio: '', conclusao: '', notas: '', estDif: false, estHoras: false, grupo: null, versaoEscolhida: false
+});
+const livroPadrao = () => ({
+  id: uid(), titulo: '', autor: '', categoria: 'Filosofia', dificuldade: 'Média', status: 'Na fila', formato: 'Físico',
+  totalPaginas: null, paginaAtual: 0, ordem: 0, semPosicao: false, inicio: '', fim: '', avaliacao: null, notas: ''
+});
+const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null });
+
+/* =========================================================
+   DADOS INICIAIS
+   Dificuldade e horas são estimativas aproximadas da comunidade
+   (guias de troféus). Ficam marcadas como "estimativa" para correção.
+   Formato: [nome, plataforma, dificuldade, horas, tem troféu online?, nota]
+   ========================================================= */
+const NOTA_NOVO = 'Lançamento recente: estimativa bem incerta.';
+const BASE_JOGOS = [
+  ['Days Gone', 'PS4', 4, 50, 0],
+  ['Hogwarts Legacy', 'PS4', 3, 55, 0],
+  ['Dark Souls II: Scholar of the First Sin', 'PS4', 7, 100, 1, 'Troféus de pactos dependem do online.'],
+  ["Assassin's Creed IV Black Flag", 'PS4', 4, 40, 0],
+  ['Star Wars Battlefront', 'PS4', 5, 60, 1],
+  ['Shadow of the Colossus', 'PS4', 5, 20, 0],
+  ['The Witcher 3: Wild Hunt', 'PS4', 4, 100, 0],
+  ['Death Stranding', 'PS4', 5, 90, 1, 'Alguns troféus usam recursos online (curtidas, estruturas compartilhadas).'],
+  ['Watch Dogs 2', 'PS4', 5, 50, 1],
+  ['Watch Dogs', 'PS4', 5, 45, 1],
+  ['Mortal Kombat X', 'PS4', 6, 60, 1],
+  ["Tom Clancy's The Division", 'PS4', 5, 80, 1],
+  ['Killzone Shadow Fall', 'PS4', 6, 50, 1],
+  ['Mafia III', 'PS4', 3, 50, 0],
+  ['DOOM', 'PS4', 7, 40, 1, 'Confirmar versão (DOOM 2016 ou DOOM Eternal?).'],
+  ['Horizon Zero Dawn', 'PS4', 3, 60, 0],
+  ['Horizon Zero Dawn Complete Edition', 'PS4', 3, 60, 0],
+  ['Red Dead Redemption 2', 'PS4', 6, 150, 1],
+  ['Dragon Age: Inquisition', 'PS4', 5, 120, 1],
+  ['Nioh', 'PS4', 7, 120, 0],
+  ['The Last of Us Remasterizado', 'PS4', 6, 80, 1],
+  ['Uncharted: The Nathan Drake Collection', 'PS4', 6, 70, 0],
+  ['God of War', 'PS4', 4, 50, 0],
+  ['God of War III Remasterizado', 'PS4', 4, 20, 0],
+  ['Godfall', 'PS5', 4, 50, 0],
+  ['The Last of Us Part II Remastered', 'PS5', 5, 40, 0],
+  ['Ratchet & Clank: Em Uma Outra Dimensão', 'PS5', 2, 20, 0],
+  ['Returnal', 'PS5', 7, 50, 0],
+  ['Prince of Persia: The Lost Crown', 'PS5', 7, 45, 0],
+  ['007 First Light', 'PS5', 4, 30, 0, NOTA_NOVO],
+  ['Uncharted: Coleção Legado dos Ladrões', 'PS5', 5, 40, 0],
+  ['Elden Ring', 'PS5', 5, 100, 0],
+  ['Lost Soul Aside', 'PS5', 5, 40, 0, NOTA_NOVO],
+  ['LEGO Batman: O Legado do Cavaleiro das Trevas', 'PS5', 2, 30, 0, NOTA_NOVO],
+  ["Assassin's Creed Black Flag Resynced", 'PS5', 4, 40, 0, NOTA_NOVO],
+  ['Forspoken', 'PS5', 3, 45, 0],
+  ['God of War Ragnarök', 'PS5', 4, 60, 0],
+  ['Chronos: The New Dawn', 'PS5', 5, 25, 0, NOTA_NOVO],
+  ["Marvel's Wolverine", 'PS5', 4, 35, 0, NOTA_NOVO]
+];
+// [título, autor, categoria, dificuldade, notas]
+const BASE_LIVROS = [
+  ['A Rebelião das Massas', 'José Ortega y Gasset', 'Filosofia', 'Densa'],
+  ['O Alienista', 'Machado de Assis', 'Literatura', 'Leve'],
+  ['O Contrato Social', 'Jean-Jacques Rousseau', 'Filosofia', 'Média'],
+  ['Vidas Secas', 'Graciliano Ramos', 'Literatura', 'Leve'],
+  ['O Utilitarismo', 'John Stuart Mill', 'Filosofia', 'Média'],
+  ['Gente Pobre', 'Fiódor Dostoiévski', 'Literatura', 'Média'],
+  ['Analectos', 'Confúcio', 'Filosofia', 'Média'],
+  ['Poética', 'Aristóteles', 'Filosofia', 'Média'],
+  ['Leviatã', 'Thomas Hobbes', 'Filosofia', 'Densa'],
+  ['Os Engastes da Sabedoria', 'Ibn Arabi', 'Filosofia', 'Densa'],
+  ['Tractatus Logico-Philosophicus / Investigações Filosóficas', 'Ludwig Wittgenstein', 'Filosofia', 'Densa']
+];
+const LIVROS_SEM_POSICAO = [
+  ['Contagem Regressiva', 'Alejandro Bullón', 'Outro', 'Média', 'Confirmar autor.'],
+  ['Opúsculos Filosóficos', '', 'Filosofia', 'Média', 'Autor a confirmar.'],
+  ['Na Outra Noite', 'Luc Colin', 'Outro', 'Média', 'Confirmar título e autor.'],
+  ['Laocoonte', '', 'Filosofia', 'Média', 'Autor a confirmar (provavelmente G. E. Lessing).'],
+  ['Todo Mundo é Lua', 'Orlando Tosetto', 'Literatura', 'Média']
+];
+
+function dadosIniciais() {
+  const st = estadoVazio();
+  st.jogos = BASE_JOGOS.map(([nome, plataforma, dif, horas, online, nota]) => Object.assign(jogoPadrao(), {
+    nome, plataforma, dificuldade: dif, horasEstimadas: horas, estDif: true, estHoras: true,
+    online: online ? ONLINE[1] : ONLINE[0], notas: nota || ''
+  }));
+  st.jogos.push(Object.assign(jogoPadrao(), {
+    nome: 'Counter-Strike 2', plataforma: 'Steam', status: 'Jogando', meta: 'Só zerar', horasJogadas: 2313
+  }));
+  // Duplicados: mesmo jogo em versões diferentes
+  const achar = n => st.jogos.find(j => j.nome === n);
+  const ligar = (a, b) => { const g = uid(); achar(a).grupo = g; achar(b).grupo = g; };
+  ligar("Assassin's Creed IV Black Flag", "Assassin's Creed Black Flag Resynced");
+  ligar('Horizon Zero Dawn', 'Horizon Zero Dawn Complete Edition');
+
+  st.livros = BASE_LIVROS.map(([titulo, autor, categoria, dificuldade], i) => Object.assign(livroPadrao(), {
+    titulo, autor, categoria, dificuldade, ordem: i + 1, status: i === 0 ? 'Lendo' : 'Na fila', inicio: i === 0 ? hoje() : ''
+  }));
+  LIVROS_SEM_POSICAO.forEach(([titulo, autor, categoria, dificuldade, notas], i) => st.livros.push(Object.assign(livroPadrao(), {
+    titulo, autor, categoria, dificuldade, notas: notas || '', ordem: BASE_LIVROS.length + i + 1, semPosicao: true
+  })));
+  return st;
+}
+
+/* =========================================================
+   ARMAZENAMENTO (localStorage com proteção)
+   ========================================================= */
+const CHAVE = 'minhaEstante.v1';
+let armazenamentoOk = true;
+let state;
+
+// Garante que dados antigos/importados tenham todos os campos
+function migrar(d) {
+  const st = Object.assign(estadoVazio(), d);
+  st.config = Object.assign(configPadrao(), d.config || {});
+  st.jogos = (d.jogos || []).map(j => Object.assign(jogoPadrao(), j));
+  st.livros = (d.livros || []).map(l => Object.assign(livroPadrao(), l));
+  delete st.app; delete st.exportadoEm;
+  return st;
+}
+function carregar() {
+  try {
+    localStorage.setItem(CHAVE + '.teste', '1'); localStorage.removeItem(CHAVE + '.teste');
+  } catch (e) { armazenamentoOk = false; }
+  try {
+    const bruto = localStorage.getItem(CHAVE);
+    if (bruto) {
+      const d = JSON.parse(bruto);
+      if (d && Array.isArray(d.jogos) && Array.isArray(d.livros)) return migrar(d);
+    }
+  } catch (e) { console.warn('Falha ao ler dados salvos', e); }
+  return null;
+}
+function salvar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(state)); return true; }
+  catch (e) { toast('Não foi possível salvar neste navegador. Exporte um backup.', 'erro'); return false; }
+}
+
+/* =========================================================
+   INTERFACE: tema, aviso flutuante e folha (modal)
+   ========================================================= */
+function aplicarTema() {
+  const t = state.config.tema === 'claro' ? 'claro' : 'escuro';
+  document.documentElement.dataset.tema = t;
+  const m = $('meta[name="theme-color"]'); if (m) m.content = t === 'claro' ? '#f2f3f7' : '#0e1014';
+}
+let tempoToast;
+function toast(msg, tipo = '') {
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast on ' + tipo;
+  clearTimeout(tempoToast); tempoToast = setTimeout(() => t.classList.remove('on'), tipo === 'erro' ? 4200 : 2600);
+}
+function abrirSheet(titulo, html, montar) {
+  const f = $('#sheetFundo');
+  $('#sheetTitulo').textContent = titulo;
+  $('#sheetCorpo').innerHTML = html;
+  $('#sheetCorpo').scrollTop = 0;
+  f.hidden = false;
+  requestAnimationFrame(() => f.classList.add('aberto'));
+  document.body.classList.add('travado');
+  if (montar) montar($('#sheetCorpo'));
+}
+function fecharSheet() {
+  const f = $('#sheetFundo');
+  f.classList.remove('aberto');
+  document.body.classList.remove('travado');
+  setTimeout(() => { if (!f.classList.contains('aberto')) { f.hidden = true; $('#sheetCorpo').innerHTML = ''; } }, 220);
+}
+
+// Helpers de formulário
+const opcoes = (lista, val, vazio) => (vazio != null ? `<option value="">${esc(vazio)}</option>` : '') +
+  lista.map(o => { const [v, r] = Array.isArray(o) ? o : [o, o]; return `<option value="${esc(v)}"${v === val ? ' selected' : ''}>${esc(r)}</option>`; }).join('');
+const campo = (rotulo, interno, cls = '') => `<label class="campo ${cls}"><span class="rotulo">${rotulo}</span>${interno}</label>`;
+const sel = (nome, lista, val, vazio) => `<select name="${nome}" id="${nome}">${opcoes(lista, val, vazio)}</select>`;
+
+/* =========================================================
+   NAVEGAÇÃO ENTRE ABAS
+   ========================================================= */
+const ABAS = {
+  painel: { titulo: 'Painel', render: () => renderPainel() },
+  jogos: { titulo: 'Jogos', render: () => renderJogos() },
+  livros: { titulo: 'Livros', render: () => renderLivros() },
+  config: { titulo: 'Configurações', render: () => renderConfig() }
+};
+let abaAtual = 'painel';
+function irPara(aba) {
+  if (!ABAS[aba]) aba = 'painel';
+  abaAtual = aba;
+  $('#tituloAba').textContent = ABAS[aba].titulo;
+  $$('.aba').forEach(a => a.classList.toggle('ativa', a.dataset.aba === aba));
+  ABAS[aba].render();
+  try { window.scrollTo(0, 0); } catch (e) { /* ignora */ }
+}
+const render = () => ABAS[abaAtual].render();
+
+/* =========================================================
+   CÁLCULOS AUXILIARES
+   ========================================================= */
+const acharJogo = id => state.jogos.find(j => j.id === id);
+const acharLivro = id => state.livros.find(l => l.id === id);
+const qtdJogando = () => state.jogos.filter(j => j.status === 'Jogando').length;
+
+// Progresso (0–100) de um jogo conforme a meta
+function progressoJogo(j) {
+  if (j.status === 'Platinado/100%') return 100;
+  if (j.meta === 'Só zerar') {
+    if (j.status === 'Zerado') return 100;
+    return j.horasEstimadas > 0 ? Math.min(100, Math.round((j.horasJogadas || 0) / j.horasEstimadas * 100)) : 0;
+  }
+  return Math.min(100, Math.max(0, j.progresso || 0));
+}
+function legendaJogo(j) {
+  const jog = `${fmtNum(j.horasJogadas)} h jogadas`;
+  if (j.meta === 'Só zerar') return j.horasEstimadas ? `${fmtNum(j.horasJogadas)} de ~${fmtNum(j.horasEstimadas)} h` : jog;
+  return `${progressoJogo(j)}% dos troféus · ${jog}`;
+}
+const progressoLivro = l => l.totalPaginas ? Math.min(100, Math.round((l.paginaAtual || 0) / l.totalPaginas * 100)) : 0;
+const iniciais = n => String(n).replace(/[^\p{L}\p{N} ]/gu, ' ').split(/\s+/).filter(Boolean)
+  .filter(w => !/^(the|of|de|da|do|em|a|o|uma|um)$/i.test(w)).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+
+// Converte semanas em texto legível
+function duracaoSemanas(sem) {
+  if (sem <= 0) return 'nada pendente';
+  if (sem < 1) return 'menos de 1 semana';
+  const meses = sem / 4.345;
+  if (meses < 2) return `≈ ${Math.round(sem)} semanas`;
+  if (meses < 24) return `≈ ${Math.round(sem)} semanas (≈ ${fmtNum(Math.round(meses))} meses)`;
+  return `≈ ${Math.round(sem)} semanas (≈ ${fmtNum(Math.round(meses / 12 * 10) / 10)} anos)`;
+}
+
+// Remove marcações de duplicado de grupos com menos de 2 jogos
+function limparGrupos() {
+  const cont = {};
+  state.jogos.forEach(j => { if (j.grupo) cont[j.grupo] = (cont[j.grupo] || 0) + 1; });
+  state.jogos.forEach(j => { if (j.grupo && cont[j.grupo] < 2) { j.grupo = null; j.versaoEscolhida = false; } });
+}
+
+/* =========================================================
+   ABA PAINEL
+   ========================================================= */
+function htmlAvisoBackup() {
+  const d = diasDesde(state.ultimoBackup);
+  if (d !== null && d <= 7) return '';
+  const txt = d === null ? 'Você ainda não fez backup.' : `Último backup há ${d} dias.`;
+  return `<div class="aviso-backup"><span>${txt} Os dados ficam só neste aparelho.</span><button class="btn mini" data-acao="exportar-backup">Fazer backup</button></div>`;
+}
+function fraseIncentivo(platAno, lidosAno) {
+  const c = state.config, agora = new Date();
+  const fracAno = (agora - new Date(agora.getFullYear(), 0, 1)) / (365.25 * 864e5);
+  const r1 = c.metaPlatinas > 0 ? platAno / c.metaPlatinas : 1;
+  const r2 = c.metaLivros > 0 ? lidosAno / c.metaLivros : 1;
+  const r = (Math.min(r1, 1) + Math.min(r2, 1)) / 2;
+  const quase = state.livros.find(l => l.status === 'Lendo' && l.totalPaginas && l.paginaAtual / l.totalPaginas >= 0.8 && l.paginaAtual < l.totalPaginas);
+  if (r1 >= 1 && r2 >= 1) return 'Metas do ano cumpridas. O resto é lucro.';
+  if (quase) return `Falta pouco para terminar “${quase.titulo}”.`;
+  if (platAno + lidosAno === 0) return 'Uma sessão ou um capítulo hoje já conta.';
+  if (r >= fracAno + 0.05) return 'Você está à frente do ritmo do ano. Bom trabalho.';
+  if (r >= fracAno - 0.1) return 'No ritmo certo. Constância vale mais que pressa.';
+  return 'Um pouco atrás do ritmo — algumas semanas focadas resolvem.';
+}
+function svgGrafico(ano) {
+  const jm = Array(12).fill(0), lm = Array(12).fill(0);
+  state.jogos.forEach(j => { if (CONCLUIDO.includes(j.status) && anoDe(j.conclusao) === ano) jm[mesDe(j.conclusao)]++; });
+  state.livros.forEach(l => { if (l.status === 'Lido' && anoDe(l.fim) === ano) lm[mesDe(l.fim)]++; });
+  const max = Math.max(1, ...jm, ...lm);
+  const W = 360, H = 165, base = 140, topo = 14, larg = W / 12, bw = (larg - 8) / 2;
+  let s = `<line x1="0" y1="${base}" x2="${W}" y2="${base}"/>`;
+  for (let m = 0; m < 12; m++) {
+    const x = m * larg + 4;
+    const hj = jm[m] / max * (base - topo), hl = lm[m] / max * (base - topo);
+    s += `<rect class="b-jogo" x="${x}" y="${base - hj}" width="${bw}" height="${hj}" rx="2"><title>${MESES[m]}: ${jm[m]} jogo(s)</title></rect>`;
+    s += `<rect class="b-livro" x="${x + bw}" y="${base - hl}" width="${bw}" height="${hl}" rx="2"><title>${MESES[m]}: ${lm[m]} livro(s)</title></rect>`;
+    if (jm[m]) s += `<text class="valor" x="${x + bw / 2}" y="${base - hj - 3}" text-anchor="middle">${jm[m]}</text>`;
+    if (lm[m]) s += `<text class="valor" x="${x + bw * 1.5}" y="${base - hl - 3}" text-anchor="middle">${lm[m]}</text>`;
+    s += `<text x="${m * larg + larg / 2}" y="${H - 8}" text-anchor="middle">${MESES[m]}</text>`;
+  }
+  return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Conclusões por mês em ${ano}">${s}</svg>`;
+}
+const numBox = (v, rot, cls, filtro) => `<button class="num ${cls}" data-acao="ir-filtro" data-filtro='${esc(JSON.stringify(filtro))}'><b>${v}</b><span>${rot}</span></button>`;
+function miniJogo(j) {
+  const p = progressoJogo(j), temBarra = j.meta !== 'Só zerar' || j.horasEstimadas;
+  return `<button class="mini-card" data-acao="editar-jogo" data-id="${j.id}">
+    <span class="capa mini capa-${j.plataforma}">${j.plataforma}</span>
+    <span class="mini-info"><strong>${esc(j.nome)}</strong>${temBarra ? `<span class="barra"><i style="width:${p}%"></i></span>` : ''}<small>${legendaJogo(j)}</small></span></button>`;
+}
+function miniLivro(l) {
+  const p = progressoLivro(l);
+  return `<a class="mini-card" href="#livros"><span class="capa mini livro">${esc(iniciais(l.titulo))}</span>
+    <span class="mini-info"><strong>${esc(l.titulo)}</strong>${l.totalPaginas ? `<span class="barra ok"><i style="width:${p}%"></i></span><small>Página ${l.paginaAtual || 0} de ${l.totalPaginas} (${p}%)</small>` : `<small>${esc(l.autor || '')} · informe o total de páginas</small>`}</span></a>`;
+}
+function renderPainel() {
+  const J = state.jogos, L = state.livros, c = state.config, ano = new Date().getFullYear();
+  const conta = (arr, s) => arr.filter(x => x.status === s).length;
+  const jogando = J.filter(j => j.status === 'Jogando'), lendo = L.filter(l => l.status === 'Lendo');
+  const platAno = J.filter(j => j.status === 'Platinado/100%' && anoDe(j.conclusao) === ano).length;
+  const lidosAno = L.filter(l => l.status === 'Lido' && anoDe(l.fim) === ano).length;
+
+  // Previsão do backlog de jogos
+  const pend = J.filter(j => ['Na fila', 'Jogando'].includes(j.status) && j.meta);
+  const comHoras = pend.filter(j => j.horasEstimadas > 0);
+  const horasRest = comHoras.reduce((s, j) => s + Math.max(0, j.horasEstimadas - (j.horasJogadas || 0)), 0);
+  const semJ = c.horasSemana > 0 ? horasRest / c.horasSemana : 0;
+  // Previsão de leitura
+  const filaL = L.filter(l => ['Na fila', 'Lendo'].includes(l.status));
+  const comPag = filaL.filter(l => l.totalPaginas > 0);
+  const pagRest = comPag.reduce((s, l) => s + Math.max(0, l.totalPaginas - (l.paginaAtual || 0)), 0);
+  const diasL = c.paginasDia > 0 ? pagRest / c.paginasDia : 0;
+
+  const barraMeta = (rot, feito, meta, cls) => {
+    const p = meta > 0 ? Math.min(100, Math.round(feito / meta * 100)) : 0;
+    return `<div class="meta-anual"><div class="linha"><span>${rot}</span><b>${feito} / ${meta}</b></div><span class="barra ${cls}"><i style="width:${p}%"></i></span></div>`;
+  };
+
+  $('#conteudo').innerHTML = `
+    ${htmlAvisoBackup()}
+    <p class="frase">${esc(fraseIncentivo(platAno, lidosAno))}</p>
+    <section class="bloco"><h2>Jogos</h2><div class="nums">
+      ${numBox(conta(J, 'Platinado/100%'), 'Platinados', 'c-plat', { status: 'Platinado/100%' })}
+      ${numBox(conta(J, 'Zerado'), 'Zerados', 'c-zer', { status: 'Zerado' })}
+      ${numBox(jogando.length, 'Jogando', 'c-jog', { status: 'Jogando' })}
+      ${numBox(conta(J, 'Na fila'), 'Na fila', '', { status: 'Na fila' })}
+    </div></section>
+    <section class="bloco"><h2>Livros</h2><div class="nums tres">
+      ${numBox(conta(L, 'Lido'), 'Lidos', 'c-zer', { aba: 'livros', status: 'Lido' })}
+      ${numBox(lendo.length, 'Lendo', 'c-jog', { aba: 'livros', status: 'Lendo' })}
+      ${numBox(conta(L, 'Na fila'), 'Na fila', '', { aba: 'livros', status: 'Na fila' })}
+    </div></section>
+    ${jogando.length ? `<section class="bloco"><h2>Jogando agora</h2><div class="mini-lista">${jogando.map(miniJogo).join('')}</div></section>` : ''}
+    ${lendo.length ? `<section class="bloco"><h2>Lendo agora</h2><div class="mini-lista">${lendo.map(miniLivro).join('')}</div></section>` : ''}
+    <section class="bloco"><h2>Metas de ${ano}</h2>
+      ${barraMeta('Platinas / 100%', platAno, c.metaPlatinas, '')}
+      ${barraMeta('Livros lidos', lidosAno, c.metaLivros, 'ok')}
+    </section>
+    <section class="bloco"><h2>Conclusões por mês — ${ano}</h2>
+      ${svgGrafico(ano)}
+      <div class="leg-graf"><span><i style="background:var(--pri)"></i>Jogos (zerados/platinados)</span><span><i style="background:var(--ok)"></i>Livros</span></div>
+    </section>
+    <section class="bloco"><h2>Previsão do backlog</h2><div class="prev">
+      <div class="prev-item"><b>${duracaoSemanas(semJ)}</b>
+        <p>${comHoras.length} jogos com meta e horas estimadas · ${fmtNum(Math.round(horasRest))} h restantes a ${fmtNum(c.horasSemana)} h/semana.${pend.length > comHoras.length ? ` ${pend.length - comHoras.length} sem horas estimadas ficam de fora.` : ''}</p></div>
+      <div class="prev-item"><b>${diasL > 0 ? duracaoSemanas(diasL / 7) : (comPag.length ? 'nada pendente' : 'sem dados ainda')}</b>
+        <p>Leitura: ${comPag.length} de ${filaL.length} livros com nº de páginas · ${fmtNum(pagRest)} páginas a ${fmtNum(c.paginasDia)} pág./dia.</p></div>
+    </div></section>`;
+}
+
+/* =========================================================
+   ABA JOGOS
+   ========================================================= */
+const filtroJ = { busca: '', plataforma: '', status: '', meta: '', prioridade: '', ordem: 'prioridade', abertos: false };
+const ORDENS_J = [['prioridade', 'Prioridade'], ['nome', 'Nome (A–Z)'], ['dificuldade', 'Dificuldade (menor primeiro)'], ['horas', 'Horas estimadas (menor primeiro)'], ['progresso', 'Progresso (maior primeiro)']];
+const porNome = (a, b) => a.nome.localeCompare(b.nome, 'pt');
+const COMPARA_J = {
+  nome: porNome,
+  prioridade: (a, b) => PRI_IDX[a.prioridade] - PRI_IDX[b.prioridade] || porNome(a, b),
+  dificuldade: (a, b) => (a.dificuldade ?? 99) - (b.dificuldade ?? 99) || porNome(a, b),
+  horas: (a, b) => (a.horasEstimadas ?? 1e9) - (b.horasEstimadas ?? 1e9) || porNome(a, b),
+  progresso: (a, b) => progressoJogo(b) - progressoJogo(a) || porNome(a, b)
+};
+
+function renderJogos() {
+  const n = qtdJogando();
+  $('#conteudo').innerHTML = `
+    <div class="acoes-linha">
+      <button class="btn pri" data-acao="novo-jogo">＋ Adicionar</button>
+      <button class="btn" data-acao="sugerir">🎲 Sugerir próximo</button>
+      <button class="btn" data-acao="importar-texto">📋 Colar lista</button>
+    </div>
+    ${n > 2 ? `<div class="alerta"><b>Foco:</b> você tem ${n} jogos em “Jogando”. Termine um antes de começar outro.</div>` : ''}
+    <div class="busca-linha">
+      <input type="search" id="buscaJogo" placeholder="Buscar jogo…" value="${esc(filtroJ.busca)}" autocomplete="off">
+      <button class="btn" data-acao="toggle-filtros-j">Filtros<span id="contFiltrosJ"></span></button>
+    </div>
+    <div class="filtros" id="filtrosJ" ${filtroJ.abertos ? '' : 'hidden'}>
+      ${campo('Plataforma', `<select data-filtro-j="plataforma">${opcoes(PLATAFORMAS, filtroJ.plataforma, 'Todas')}</select>`)}
+      ${campo('Status', `<select data-filtro-j="status">${opcoes(STATUS_JOGO, filtroJ.status, 'Todos')}</select>`)}
+      ${campo('Meta', `<select data-filtro-j="meta">${opcoes(METAS, filtroJ.meta, 'Todas')}</select>`)}
+      ${campo('Prioridade', `<select data-filtro-j="prioridade">${opcoes(PRIORIDADES, filtroJ.prioridade, 'Todas')}</select>`)}
+      ${campo('Ordenar por', `<select data-filtro-j="ordem">${opcoes(ORDENS_J, filtroJ.ordem)}</select>`, 'largo')}
+      <button class="btn link largo" data-acao="limpar-filtros-j">Limpar filtros</button>
+    </div>
+    <div class="contagem" id="contagemJ"></div>
+    <div class="lista" id="listaJogos"></div>`;
+  $('#buscaJogo').addEventListener('input', e => { filtroJ.busca = e.target.value; renderListaJogos(); });
+  $$('[data-filtro-j]').forEach(s => s.addEventListener('change', () => { filtroJ[s.dataset.filtroJ] = s.value; renderListaJogos(); }));
+  renderListaJogos();
+}
+function renderListaJogos() {
+  const b = norm(filtroJ.busca);
+  const lista = state.jogos.filter(j =>
+    (!b || norm(j.nome).includes(b)) &&
+    (!filtroJ.plataforma || j.plataforma === filtroJ.plataforma) &&
+    (!filtroJ.status || j.status === filtroJ.status) &&
+    (!filtroJ.meta || j.meta === filtroJ.meta) &&
+    (!filtroJ.prioridade || j.prioridade === filtroJ.prioridade)
+  ).sort(COMPARA_J[filtroJ.ordem] || COMPARA_J.prioridade);
+  const ativos = ['plataforma', 'status', 'meta', 'prioridade'].filter(k => filtroJ[k]).length;
+  const cf = $('#contFiltrosJ'); if (cf) cf.innerHTML = ativos ? `<span class="badge-num">${ativos}</span>` : '';
+  $('#contagemJ').textContent = `${lista.length} de ${state.jogos.length} jogos`;
+  $('#listaJogos').innerHTML = lista.length ? lista.map(cardJogo).join('')
+    : `<div class="vazio">${state.jogos.length ? 'Nenhum jogo com esses filtros.' : 'Nenhum jogo ainda. Toque em “Adicionar” ou “Colar lista”.'}</div>`;
+}
+function cardJogo(j) {
+  const p = progressoJogo(j);
+  const semBarra = j.meta === 'Só zerar' && !j.horasEstimadas;
+  const chips = [];
+  if (j.online === ONLINE[1]) chips.push(`<span class="chip aviso">⚠ Troféu online: verificar servidores</span>`);
+  if (j.online === ONLINE[2]) chips.push(`<span class="chip perigo">✕ Platina impossível</span>`);
+  if (j.grupo) {
+    const grupo = state.jogos.filter(x => x.grupo === j.grupo);
+    const escolhida = grupo.find(x => x.versaoEscolhida);
+    if (j.versaoEscolhida) chips.push(`<button class="chip ok" data-acao="escolher-versao" data-grupo="${j.grupo}">★ Versão escolhida</button>`);
+    else if (escolhida) chips.push(`<button class="chip dup" data-acao="escolher-versao" data-grupo="${j.grupo}">Duplicado · vai platinar no ${esc(escolhida.plataforma)}</button>`);
+    else chips.push(`<button class="chip dup" data-acao="escolher-versao" data-grupo="${j.grupo}">Duplicado · escolher versão</button>`);
+  }
+  const est = '<span class="est">estimativa</span>';
+  const metaTxt = j.meta === 'Platinar' ? '🏆 Platinar' : j.meta === '100% conquistas' ? '🏆 100%' : '🏁 Só zerar';
+  return `<article class="card" data-acao="editar-jogo" data-id="${j.id}">
+    <div class="capa capa-${j.plataforma}"><span class="plat">${j.plataforma}</span><span class="ini">${esc(iniciais(j.nome))}</span></div>
+    <div class="card-corpo">
+      <div class="card-topo"><h3>${esc(j.nome)}</h3>
+        <button class="selo ${STATUS_CLASSE[j.status]}" data-acao="status-jogo" data-id="${j.id}" aria-label="Mudar status">${esc(j.status)} ▾</button></div>
+      <div class="info">
+        <span>${metaTxt}</span>
+        ${j.dificuldade != null ? `<span>Dif. ${j.dificuldade}/10${j.estDif ? est : ''}</span>` : ''}
+        ${j.horasEstimadas != null ? `<span>~${fmtNum(j.horasEstimadas)} h${j.estHoras ? est : ''}</span>` : ''}
+        <span class="prio-${j.prioridade}">${j.prioridade}</span>
+      </div>
+      ${semBarra ? '' : `<span class="barra"><i style="width:${p}%"></i></span>`}
+      <div class="legenda"><span>${legendaJogo(j)}</span>${j.conclusao && CONCLUIDO.includes(j.status) ? `<span>✓ ${fmtData(j.conclusao)}</span>` : ''}</div>
+      ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
+    </div></article>`;
+}
+
+// Aplica mudança de status com datas automáticas
+function aplicarStatusJogo(j, novo) {
+  const ant = j.status;
+  j.status = novo;
+  if (novo === 'Jogando' && !j.inicio) j.inicio = hoje();
+  if (CONCLUIDO.includes(novo) && novo !== ant) j.conclusao = hoje();
+  if (novo === 'Platinado/100%') j.progresso = 100;
+  return ant;
+}
+function avisarFoco(antes, depois) {
+  if (depois === 'Jogando' && antes !== 'Jogando' && qtdJogando() > 2)
+    toast(`Foco: já são ${qtdJogando()} jogos em “Jogando”. Que tal terminar um antes?`, 'aviso');
+}
+
+// Menu rápido de status (jogo ou livro)
+function menuStatus(tipo, id) {
+  const item = tipo === 'jogo' ? acharJogo(id) : acharLivro(id);
+  if (!item) return;
+  const lista = tipo === 'jogo' ? STATUS_JOGO : STATUS_LIVRO;
+  abrirSheet('Mudar status', `<p class="ajuda" style="margin-bottom:12px">${esc(item.nome || item.titulo)}</p>
+    <div class="menu-opcoes">${lista.map(s => `<button class="opcao ${s === item.status ? 'atual' : ''}" data-acao="set-status-${tipo}" data-id="${id}" data-s="${esc(s)}">
+      <span class="ponto ${STATUS_CLASSE[s] || 'st-fila'}" style="background:currentColor"></span><span class="${STATUS_CLASSE[s] || ''}" style="background:none">${esc(s)}</span></button>`).join('')}</div>`);
+}
+
+// Formulário de jogo (novo ou edição)
+function formJogo(id) {
+  const novo = !id;
+  const j = novo ? jogoPadrao() : acharJogo(id);
+  if (!j) return;
+  const outros = state.jogos.filter(x => x.id !== j.id).sort(porNome);
+  const dupAtual = j.grupo ? outros.find(x => x.grupo === j.grupo) : null;
+  const html = `<form class="form" id="fJogo" novalidate>
+    ${campo('Nome', `<input name="nome" required value="${esc(j.nome)}" autocomplete="off">`)}
+    <div class="g2">
+      ${campo('Plataforma', sel('plataforma', PLATAFORMAS, j.plataforma))}
+      ${campo('Status', sel('status', STATUS_JOGO, j.status))}
+    </div>
+    <div class="g2">
+      ${campo('Meta', sel('meta', METAS, j.meta))}
+      ${campo('Prioridade', sel('prioridade', PRIORIDADES, j.prioridade))}
+    </div>
+    <div class="g2">
+      <div class="campo"><span class="rotulo">Dificuldade (1–10)</span>
+        <input type="number" name="dificuldade" min="1" max="10" step="1" inputmode="numeric" value="${j.dificuldade ?? ''}">
+        <label class="check-mini"><input type="checkbox" name="estDif" ${j.estDif ? 'checked' : ''}> é estimativa</label></div>
+      <div class="campo"><span class="rotulo">Horas estimadas p/ meta</span>
+        <input type="number" name="horasEstimadas" min="0" step="1" inputmode="decimal" value="${j.horasEstimadas ?? ''}">
+        <label class="check-mini"><input type="checkbox" name="estHoras" ${j.estHoras ? 'checked' : ''}> é estimativa</label></div>
+    </div>
+    <div class="g2">
+      ${campo('Horas jogadas', `<input type="number" name="horasJogadas" min="0" step="0.5" inputmode="decimal" value="${j.horasJogadas ?? 0}">`)}
+      ${campo('Troféus/conquistas (%)', `<input type="number" name="progresso" min="0" max="100" step="1" inputmode="numeric" value="${j.progresso ?? 0}">`)}
+    </div>
+    ${campo('Troféus online', sel('online', ONLINE, j.online))}
+    <div class="g2">
+      ${campo('Início', `<input type="date" name="inicio" value="${esc(j.inicio)}">`)}
+      ${campo('Conclusão', `<input type="date" name="conclusao" value="${esc(j.conclusao)}">`)}
+    </div>
+    ${campo('Mesmo jogo que (versão duplicada)', `<select name="duplicadoDe">${opcoes(outros.map(x => [x.id, `${x.nome} (${x.plataforma})`]), dupAtual ? dupAtual.id : '', '— não é duplicado —')}</select>`)}
+    <label class="check" id="boxEscolhida" ${j.grupo ? '' : 'hidden'}><input type="checkbox" name="versaoEscolhida" ${j.versaoEscolhida ? 'checked' : ''}> Esta é a versão que vou platinar</label>
+    ${campo('Notas', `<textarea name="notas" rows="3">${esc(j.notas)}</textarea>`)}
+    <button class="btn pri cheio" type="submit">${novo ? 'Adicionar jogo' : 'Salvar alterações'}</button>
+    ${novo ? '' : `<button class="btn perigo cheio" type="button" data-acao="excluir-jogo" data-id="${j.id}">Excluir jogo</button>`}
+  </form>`;
+  abrirSheet(novo ? 'Novo jogo' : 'Editar jogo', html, c => {
+    const f = $('#fJogo', c), el = f.elements;
+    let statusAnt = el.status.value;
+    // Preenchimento automático de datas ao trocar o status
+    el.status.addEventListener('change', () => {
+      const s = el.status.value;
+      if (s === 'Jogando' && !el.inicio.value) el.inicio.value = hoje();
+      if (CONCLUIDO.includes(s) && s !== statusAnt) el.conclusao.value = hoje();
+      if (s === 'Platinado/100%') el.progresso.value = 100;
+      statusAnt = s;
+    });
+    // Novo jogo: meta padrão conforme a plataforma
+    if (novo) el.plataforma.addEventListener('change', () => { el.meta.value = el.plataforma.value === 'Steam' ? '100% conquistas' : 'Platinar'; });
+    // Ao corrigir um valor, deixa de ser estimativa
+    el.dificuldade.addEventListener('input', () => { el.estDif.checked = false; });
+    el.horasEstimadas.addEventListener('input', () => { el.estHoras.checked = false; });
+    el.duplicadoDe.addEventListener('change', () => { $('#boxEscolhida', c).hidden = !el.duplicadoDe.value; });
+    f.addEventListener('submit', e => { e.preventDefault(); salvarFormJogo(f, j, novo); });
+    if (novo) setTimeout(() => el.nome.focus(), 250);
+  });
+}
+function salvarFormJogo(form, j, novo) {
+  const f = Object.fromEntries(new FormData(form));
+  const nome = (f.nome || '').trim();
+  if (!nome) { toast('Informe o nome do jogo.', 'erro'); form.elements.nome.focus(); return; }
+  const statusAnt = novo ? null : j.status;
+  Object.assign(j, {
+    nome, plataforma: f.plataforma, status: f.status, meta: f.meta, prioridade: f.prioridade, online: f.online,
+    dificuldade: limitar(num(f.dificuldade), 1, 10),
+    horasEstimadas: positivo(num(f.horasEstimadas)),
+    horasJogadas: positivo(num(f.horasJogadas)) ?? 0,
+    progresso: limitar(num(f.progresso), 0, 100) ?? 0,
+    inicio: f.inicio || '', conclusao: f.conclusao || '', notas: (f.notas || '').trim()
+  });
+  j.estDif = !!f.estDif && j.dificuldade != null;
+  j.estHoras = !!f.estHoras && j.horasEstimadas != null;
+  if (j.status === 'Platinado/100%') j.progresso = 100;
+  if (j.status === 'Jogando' && !j.inicio) j.inicio = hoje();
+  if (CONCLUIDO.includes(j.status) && !j.conclusao) j.conclusao = hoje();
+  // Duplicados
+  const outro = f.duplicadoDe ? acharJogo(f.duplicadoDe) : null;
+  if (outro) {
+    if (!outro.grupo) outro.grupo = (j.grupo && !state.jogos.some(x => x.grupo === j.grupo && x.id !== j.id)) ? j.grupo : uid();
+    j.grupo = outro.grupo;
+    if (f.versaoEscolhida) state.jogos.forEach(x => { if (x.grupo === j.grupo) x.versaoEscolhida = false; });
+    j.versaoEscolhida = !!f.versaoEscolhida;
+  } else { j.grupo = null; j.versaoEscolhida = false; }
+  if (novo) state.jogos.push(j);
+  limparGrupos();
+  salvar(); fecharSheet(); render();
+  toast(novo ? 'Jogo adicionado.' : 'Alterações salvas.');
+  avisarFoco(statusAnt, j.status);
+}
+function excluirJogo(id) {
+  const j = acharJogo(id); if (!j) return;
+  if (!confirm(`Excluir “${j.nome}”? Essa ação não pode ser desfeita.`)) return;
+  state.jogos = state.jogos.filter(x => x.id !== id);
+  limparGrupos(); salvar(); fecharSheet(); render(); toast('Jogo excluído.');
+}
+function menuVersao(grupo) {
+  const g = state.jogos.filter(j => j.grupo === grupo);
+  abrirSheet('Qual versão vai platinar?', `<p class="ajuda" style="margin-bottom:12px">Mesmo jogo em versões diferentes. Escolha onde vai buscar a platina.</p>
+    <div class="menu-opcoes">${g.map(j => `<button class="opcao ${j.versaoEscolhida ? 'atual' : ''}" data-acao="set-versao" data-id="${j.id}">
+      <span class="capa mini capa-${j.plataforma}" style="width:38px;height:38px">${j.plataforma}</span>
+      <span>${esc(j.nome)}<br><small class="ajuda">${j.dificuldade != null ? `Dif. ${j.dificuldade}/10 · ` : ''}${j.horasEstimadas != null ? `~${j.horasEstimadas} h` : ''}</small></span></button>`).join('')}</div>`);
+}
+
+/* ---------- Sugerir próximo jogo ---------- */
+let sugestao = { lista: [], idx: 0, querFacil: null, ultimo: null };
+function calcularSugestao() {
+  // Último jogo concluído (com dificuldade registrada) define a alternância
+  const concl = state.jogos.filter(j => CONCLUIDO.includes(j.status) && j.conclusao && j.dificuldade != null)
+    .sort((a, b) => b.conclusao.localeCompare(a.conclusao));
+  const ultimo = concl[0] || null;
+  const querFacil = ultimo ? ultimo.dificuldade >= 6 : null;
+  const fila = state.jogos.filter(j => {
+    if (j.status !== 'Na fila') return false;
+    // Em duplicados, ignora a versão que não foi escolhida
+    if (j.grupo) { const esc = state.jogos.find(x => x.grupo === j.grupo && x.versaoEscolhida); if (esc && esc.id !== j.id) return false; }
+    return true;
+  });
+  const pontos = j => {
+    const d = j.dificuldade ?? 5;
+    let s = PRI_IDX[j.prioridade] * 100; // prioridade manda
+    if (querFacil === true) s += d * 6; else if (querFacil === false) s += (10 - d) * 6; else s += d * 3;
+    if (j.online === ONLINE[2] && j.meta !== 'Só zerar') s += 60;
+    return s + (j.horasEstimadas ?? 50) / 25;
+  };
+  return { lista: fila.sort((a, b) => pontos(a) - pontos(b)), idx: 0, querFacil, ultimo };
+}
+function mostrarSugestao() {
+  if (!sugestao.lista.length) {
+    abrirSheet('Sugestão', '<div class="vazio">Nenhum jogo “Na fila”. Adicione jogos ou mude algum status para “Na fila”.</div>'); return;
+  }
+  const j = sugestao.lista[sugestao.idx % sugestao.lista.length], u = sugestao.ultimo, d = j.dificuldade;
+  let motivo = `Prioridade ${j.prioridade.toLowerCase()}.`;
+  if (u && sugestao.querFacil && d != null && d <= 5) motivo += ` O último concluído (${u.nome}, dif. ${u.dificuldade}) foi pesado — este é mais tranquilo.`;
+  else if (u && sugestao.querFacil === false && d != null && d >= 6) motivo += ` O último concluído (${u.nome}, dif. ${u.dificuldade}) foi leve — hora de um desafio.`;
+  else if (!u) motivo += ' Ainda não há jogo concluído com dificuldade registrada, então começo pelos mais acessíveis.';
+  if (j.online === ONLINE[1]) motivo += ' Atenção: tem troféus online — confira se os servidores estão ativos.';
+  const total = sugestao.lista.length, pos = sugestao.idx % total + 1;
+  abrirSheet('Próximo jogo', `
+    <div class="sugestao"><div class="capa capa-${j.plataforma}"><span class="plat">${j.plataforma}</span><span class="ini">${esc(iniciais(j.nome))}</span></div>
+      <div><h3 style="font-size:17px">${esc(j.nome)}</h3><div class="info" style="margin-top:6px">
+        ${d != null ? `<span>Dif. ${d}/10</span>` : ''}${j.horasEstimadas != null ? `<span>~${j.horasEstimadas} h</span>` : ''}<span class="prio-${j.prioridade}">${j.prioridade}</span></div></div></div>
+    <p class="motivo">${esc(motivo)}</p>
+    <div class="acoes-linha"><button class="btn pri" data-acao="sug-comecar" data-id="${j.id}">Começar agora</button>
+      <button class="btn" data-acao="sug-outra">Outra sugestão (${pos}/${total})</button></div>`);
+}
+
+/* ---------- Importação por texto ---------- */
+// Limpa uma linha colada: remove marcadores de lista e espaços extras
+const limparLinha = l => l.replace(/^\s*(?:[-*•·]|\d+[.)\-:]?)\s+/, '').replace(/\s+/g, ' ').trim();
+function analisarImportacao(texto, plataforma) {
+  const vistos = new Set(), novos = [], existentes = [], outraPlat = [];
+  let repetidos = 0;
+  texto.split(/\r?\n/).map(limparLinha).filter(Boolean).forEach(nome => {
+    const k = norm(nome);
+    if (!k) return;
+    if (vistos.has(k)) { repetidos++; return; }
+    vistos.add(k);
+    const iguais = state.jogos.filter(j => norm(j.nome) === k);
+    if (iguais.some(j => j.plataforma === plataforma)) existentes.push(nome);
+    else { novos.push(nome); if (iguais.length) outraPlat.push(nome); }
+  });
+  return { novos, existentes, outraPlat, repetidos };
+}
+function abrirImportacao() {
+  abrirSheet('Colar lista de jogos', `<div class="form">
+    <p class="ajuda">Cole um jogo por linha (ex.: da sua biblioteca Steam ou PSN). Linhas vazias e marcadores como “1.” ou “-” são ignorados.</p>
+    <textarea id="impTexto" rows="9" placeholder="Hades&#10;Hollow Knight&#10;Celeste"></textarea>
+    <div class="g2">${campo('Plataforma', sel('impPlat', PLATAFORMAS, 'Steam'))}${campo('Status padrão', sel('impStatus', STATUS_JOGO, 'Na fila'))}</div>
+    <div class="g2">${campo('Meta padrão', sel('impMeta', METAS, '100% conquistas'))}${campo('Prioridade', sel('impPri', PRIORIDADES, 'Média'))}</div>
+    <div class="resumo" id="impResumo">Cole a lista acima.</div>
+    <button class="btn pri cheio" data-acao="confirmar-importacao" id="btnImportar" disabled>Importar</button>
+  </div>`, c => {
+    const atualizar = () => {
+      const r = analisarImportacao($('#impTexto', c).value, $('#impPlat', c).value);
+      const partes = [];
+      if (r.novos.length) partes.push(`<b>${r.novos.length}</b> jogo(s) novo(s)`);
+      if (r.existentes.length) partes.push(`<b>${r.existentes.length}</b> já existe(m) nessa plataforma e será(ão) ignorado(s): ${esc(r.existentes.slice(0, 8).join(', '))}${r.existentes.length > 8 ? '…' : ''}`);
+      if (r.outraPlat.length) partes.push(`${r.outraPlat.length} também existe(m) em outra plataforma (dá para marcar como duplicado depois)`);
+      if (r.repetidos) partes.push(`${r.repetidos} linha(s) repetida(s) na lista`);
+      $('#impResumo', c).innerHTML = partes.length ? partes.join('<br>') : 'Cole a lista acima.';
+      $('#btnImportar', c).disabled = !r.novos.length;
+      $('#btnImportar', c).textContent = r.novos.length ? `Importar ${r.novos.length} jogo(s)` : 'Importar';
+    };
+    $('#impTexto', c).addEventListener('input', atualizar);
+    $('#impPlat', c).addEventListener('change', () => { $('#impMeta', c).value = $('#impPlat', c).value === 'Steam' ? '100% conquistas' : 'Platinar'; atualizar(); });
+  });
+}
+function confirmarImportacao() {
+  const plat = $('#impPlat').value, status = $('#impStatus').value, meta = $('#impMeta').value, pri = $('#impPri').value;
+  const r = analisarImportacao($('#impTexto').value, plat);
+  r.novos.forEach(nome => {
+    const j = Object.assign(jogoPadrao(), { nome, plataforma: plat, status, meta, prioridade: pri });
+    aplicarStatusJogo(j, status);
+    state.jogos.push(j);
+  });
+  salvar(); render();
+  $('#sheetCorpo').innerHTML = `<div class="form"><div class="resumo"><b>${r.novos.length}</b> jogo(s) importado(s) para ${plat}.${r.existentes.length ? `<br>${r.existentes.length} ignorado(s) por já existirem: ${esc(r.existentes.join(', '))}` : ''}${r.outraPlat.length ? `<br>Também existem em outra plataforma: ${esc(r.outraPlat.join(', '))}` : ''}</div>
+    <button class="btn pri cheio" data-acao="fechar-sheet">Concluir</button></div>`;
+  toast(`${r.novos.length} jogo(s) importado(s).`);
+}
+
+/* =========================================================
+   ABA LIVROS
+   ========================================================= */
+const filtroL = { busca: '', status: '', categoria: '', vista: 'ordem' };
+const listaOrdem = () => state.livros.filter(l => l.status === 'Lendo' || l.status === 'Na fila').sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+const maxOrdem = () => state.livros.reduce((m, l) => Math.max(m, l.ordem || 0), 0);
+
+function renderLivros() {
+  const lendo = state.livros.filter(l => l.status === 'Lendo');
+  $('#conteudo').innerHTML = `
+    ${lendo.map(cardLendo).join('')}
+    <div class="acoes-linha"><button class="btn pri" data-acao="novo-livro">＋ Adicionar livro</button></div>
+    <div class="segmentado">
+      <button data-acao="vista-livros" data-v="ordem" class="${filtroL.vista === 'ordem' ? 'ativo' : ''}">Ordem de leitura</button>
+      <button data-acao="vista-livros" data-v="todos" class="${filtroL.vista === 'todos' ? 'ativo' : ''}">Todos</button>
+    </div>
+    <div id="areaLivros"></div>`;
+  renderAreaLivros();
+}
+function cardLendo(l) {
+  const p = progressoLivro(l), c = state.config;
+  const falta = l.totalPaginas ? Math.max(0, l.totalPaginas - (l.paginaAtual || 0)) : null;
+  const dias = falta != null && c.paginasDia > 0 ? Math.ceil(falta / c.paginasDia) : null;
+  return `<section class="lendo-card">
+    <span class="rotulo-lendo">Lendo agora</span>
+    <h3>${esc(l.titulo)}</h3><div class="sub">${esc(l.autor || 'Autor a definir')} · ${esc(l.formato)}</div>
+    <div style="margin-top:12px"><span class="barra ok"><i style="width:${p}%"></i></span>
+    <div class="legenda"><span>${l.totalPaginas ? `Página ${l.paginaAtual || 0} de ${l.totalPaginas} · ${p}%` : 'Informe o total de páginas para ver o progresso'}</span>
+      <span>${dias != null ? (dias ? `~${dias} dia(s) no seu ritmo` : 'Concluído!') : ''}</span></div></div>
+    <form class="form-pagina" data-pagina="${l.id}">
+      ${campo('Página atual', `<input type="number" id="pg-${l.id}" min="0" inputmode="numeric" value="${l.paginaAtual || 0}">`)}
+      ${campo('Total', `<input type="number" id="tot-${l.id}" min="1" inputmode="numeric" value="${l.totalPaginas ?? ''}" placeholder="—">`)}
+      <button class="btn pri" type="submit">Salvar</button>
+    </form>
+  </section>`;
+}
+function renderAreaLivros() {
+  const area = $('#areaLivros'); if (!area) return;
+  if (filtroL.vista === 'ordem') { area.innerHTML = htmlOrdem(); ligarArraste(); return; }
+  area.innerHTML = `
+    <div class="busca-linha"><input type="search" id="buscaLivro" placeholder="Buscar título ou autor…" value="${esc(filtroL.busca)}" autocomplete="off"></div>
+    <div class="filtros">
+      ${campo('Status', `<select data-filtro-l="status">${opcoes(STATUS_LIVRO, filtroL.status, 'Todos')}</select>`)}
+      ${campo('Categoria', `<select data-filtro-l="categoria">${opcoes(CATEGORIAS, filtroL.categoria, 'Todas')}</select>`)}
+    </div>
+    <div class="contagem" id="contagemL"></div>
+    <div class="lista" id="listaLivros"></div>`;
+  $('#buscaLivro').addEventListener('input', e => { filtroL.busca = e.target.value; renderListaLivros(); });
+  $$('[data-filtro-l]').forEach(s => s.addEventListener('change', () => { filtroL[s.dataset.filtroL] = s.value; renderListaLivros(); }));
+  renderListaLivros();
+}
+function htmlOrdem() {
+  const lista = listaOrdem();
+  if (!lista.length) return '<div class="vazio">Nenhum livro na fila de leitura.</div>';
+  let h = '<p class="ajuda" style="margin:0 2px 10px">Arraste pela alça ⠿ ou use as setas. Toque no título para editar.</p><ol class="ordem" id="listaOrdem">';
+  lista.forEach((l, i) => {
+    if (i > 0 && lista[i - 1].dificuldade === 'Densa' && l.dificuldade === 'Densa')
+      h += `<li class="aviso-denso">Dois livros densos em sequência — que tal intercalar um Leve aqui?</li>`;
+    h += `<li class="ordem-item" data-id="${l.id}">
+      <span class="alca" data-alca aria-label="Arrastar">⠿</span>
+      <span class="pos">${i + 1}</span>
+      <div class="ordem-info" data-acao="editar-livro" data-id="${l.id}">
+        <strong>${esc(l.titulo)}</strong>
+        <small>${esc(l.autor || 'autor a definir')} · ${esc(l.categoria)} · <span class="dif-${l.dificuldade}">${esc(l.dificuldade)}</span></small>
+        ${l.status === 'Lendo' || l.semPosicao ? `<div class="chips">${l.status === 'Lendo' ? '<span class="chip ok">Lendo</span>' : ''}${l.semPosicao ? '<span class="chip aviso">posição a definir</span>' : ''}</div>` : ''}
+      </div>
+      <div class="setas"><button data-acao="subir" data-id="${l.id}" ${i === 0 ? 'disabled' : ''} aria-label="Subir">▲</button>
+        <button data-acao="descer" data-id="${l.id}" ${i === lista.length - 1 ? 'disabled' : ''} aria-label="Descer">▼</button></div>
+    </li>`;
+  });
+  return h + '</ol>';
+}
+function renderListaLivros() {
+  const b = norm(filtroL.busca), ordemSt = { 'Lendo': 0, 'Na fila': 1, 'Lido': 2, 'Abandonado': 3 };
+  const lista = state.livros.filter(l =>
+    (!b || norm(l.titulo + ' ' + l.autor).includes(b)) &&
+    (!filtroL.status || l.status === filtroL.status) &&
+    (!filtroL.categoria || l.categoria === filtroL.categoria)
+  ).sort((a, c) => ordemSt[a.status] - ordemSt[c.status] || (a.status === 'Lido' ? (c.fim || '').localeCompare(a.fim || '') : (a.ordem || 0) - (c.ordem || 0)));
+  $('#contagemL').textContent = `${lista.length} de ${state.livros.length} livros`;
+  $('#listaLivros').innerHTML = lista.length ? lista.map(cardLivro).join('') : '<div class="vazio">Nenhum livro com esses filtros.</div>';
+}
+function cardLivro(l) {
+  const p = progressoLivro(l);
+  return `<article class="card" data-acao="editar-livro" data-id="${l.id}">
+    <div class="capa livro"><span class="plat">${esc(l.formato)}</span><span class="ini">${esc(iniciais(l.titulo))}</span></div>
+    <div class="card-corpo">
+      <div class="card-topo"><div><h3>${esc(l.titulo)}</h3><div class="sub">${esc(l.autor || 'Autor a definir')}</div></div>
+        <button class="selo ${STATUS_CLASSE[l.status]}" data-acao="status-livro" data-id="${l.id}">${esc(l.status)} ▾</button></div>
+      <div class="info"><span>${esc(l.categoria)}</span><span class="dif-${l.dificuldade}">${esc(l.dificuldade)}</span>
+        ${l.totalPaginas ? `<span>${l.totalPaginas} pág.</span>` : ''}${l.avaliacao ? `<span class="estrelas-txt">${'★'.repeat(l.avaliacao)}</span>` : ''}</div>
+      ${l.totalPaginas && l.status !== 'Na fila' ? `<span class="barra ok"><i style="width:${p}%"></i></span>` : ''}
+      ${l.status === 'Lido' && l.fim ? `<div class="legenda"><span>Lido em ${fmtData(l.fim)}</span></div>` : ''}
+    </div></article>`;
+}
+
+/* ---------- Reordenação (arrastar + botões) ---------- */
+function aplicarOrdem(ids, movidoId) {
+  ids.forEach((id, i) => { const l = acharLivro(id); if (l) l.ordem = i + 1; });
+  // Livros fora da fila (lidos/abandonados) ficam depois
+  let n = ids.length;
+  state.livros.filter(l => !ids.includes(l.id)).sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).forEach(l => { l.ordem = ++n; });
+  const m = acharLivro(movidoId); if (m) m.semPosicao = false;
+  salvar();
+}
+function moverLivro(id, delta) {
+  const ids = listaOrdem().map(l => l.id), i = ids.indexOf(id), k = i + delta;
+  if (i < 0 || k < 0 || k >= ids.length) return;
+  [ids[i], ids[k]] = [ids[k], ids[i]];
+  aplicarOrdem(ids, id); renderAreaLivros();
+}
+function moverParaPosicao(id, pos) {
+  const ids = listaOrdem().map(l => l.id).filter(x => x !== id);
+  ids.splice(Math.max(0, Math.min(ids.length, pos - 1)), 0, id);
+  aplicarOrdem(ids, id);
+}
+// Arrastar com Pointer Events (funciona com dedo e mouse)
+function ligarArraste() {
+  const lista = $('#listaOrdem'); if (!lista) return;
+  lista.addEventListener('pointerdown', ev => {
+    const alca = ev.target.closest('[data-alca]'); if (!alca) return;
+    const item = alca.closest('.ordem-item');
+    ev.preventDefault();
+    lista.classList.add('em-arraste'); item.classList.add('arrastando');
+    const mover = e => {
+      const y = e.clientY;
+      const irmaos = $$('.ordem-item', lista).filter(x => x !== item);
+      const antes = irmaos.find(s => { const r = s.getBoundingClientRect(); return y < r.top + r.height / 2; });
+      if (antes) { if (antes.previousElementSibling !== item) lista.insertBefore(item, antes); }
+      else if (lista.lastElementChild !== item) lista.appendChild(item);
+      // Rolagem automática perto das bordas
+      if (y < 90) window.scrollBy(0, -12); else if (y > window.innerHeight - 140) window.scrollBy(0, 12);
+    };
+    // Ouve no documento inteiro: mover o item no DOM cancela a captura do ponteiro
+    const soltar = () => {
+      document.removeEventListener('pointermove', mover);
+      document.removeEventListener('pointerup', soltar);
+      document.removeEventListener('pointercancel', soltar);
+      const ids = $$('.ordem-item', lista).map(x => x.dataset.id);
+      aplicarOrdem(ids, item.dataset.id);
+      renderAreaLivros();
+    };
+    document.addEventListener('pointermove', mover);
+    document.addEventListener('pointerup', soltar);
+    document.addEventListener('pointercancel', soltar);
+  });
+}
+
+/* ---------- Status, página e avaliação de livros ---------- */
+function aplicarStatusLivro(l, novo) {
+  const ant = l.status;
+  l.status = novo;
+  if (novo === 'Lendo' && !l.inicio) l.inicio = hoje();
+  if (novo === 'Lido' && ant !== 'Lido') { l.fim = hoje(); if (l.totalPaginas) l.paginaAtual = l.totalPaginas; }
+  if ((novo === 'Lendo' || novo === 'Na fila') && !['Lendo', 'Na fila'].includes(ant)) l.ordem = maxOrdem() + 1;
+  return ant !== 'Lido' && novo === 'Lido';
+}
+function abrirAvaliacao(l) {
+  abrirSheet('Terminou! Que nota você dá?', `<p class="ajuda" style="text-align:center">${esc(l.titulo)}</p>
+    <div class="estrelas">${[1, 2, 3, 4, 5].map(n => `<button class="estrela ${l.avaliacao >= n ? 'on' : ''}" data-acao="avaliar" data-id="${l.id}" data-n="${n}" aria-label="${n} estrela(s)">★</button>`).join('')}</div>
+    <button class="btn link cheio" data-acao="fechar-sheet">Agora não</button>`);
+}
+function salvarPagina(id) {
+  const l = acharLivro(id); if (!l) return;
+  const pg = positivo(num($('#pg-' + id).value)), tot = positivo(num($('#tot-' + id).value));
+  if (pg == null) { toast('Digite a página atual.', 'erro'); return; }
+  l.totalPaginas = tot ? Math.round(tot) : null;
+  l.paginaAtual = Math.round(pg);
+  if (l.totalPaginas && l.paginaAtual > l.totalPaginas) l.paginaAtual = l.totalPaginas;
+  if (!l.inicio) l.inicio = hoje();
+  salvar();
+  if (l.totalPaginas && l.paginaAtual >= l.totalPaginas && confirm(`Você chegou ao fim de “${l.titulo}”. Marcar como lido?`)) {
+    aplicarStatusLivro(l, 'Lido'); salvar(); render(); abrirAvaliacao(l); return;
+  }
+  render(); toast('Progresso salvo.');
+}
+function formLivro(id) {
+  const novo = !id;
+  const l = novo ? livroPadrao() : acharLivro(id);
+  if (!l) return;
+  const naFila = ['Lendo', 'Na fila'].includes(l.status);
+  const posAtual = naFila ? listaOrdem().findIndex(x => x.id === l.id) + 1 : '';
+  const html = `<form class="form" id="fLivro" novalidate>
+    ${campo('Título', `<input name="titulo" required value="${esc(l.titulo)}" autocomplete="off">`)}
+    ${campo('Autor', `<input name="autor" value="${esc(l.autor)}" autocomplete="off">`)}
+    <div class="g3">
+      ${campo('Categoria', sel('categoria', CATEGORIAS, l.categoria))}
+      ${campo('Dificuldade', sel('dificuldade', DIFS_LIVRO, l.dificuldade))}
+      ${campo('Formato', sel('formato', FORMATOS, l.formato))}
+    </div>
+    <div class="g2">
+      ${campo('Status', sel('status', STATUS_LIVRO, l.status))}
+      ${campo(`Posição na ordem${novo ? '' : ` (1–${listaOrdem().length})`}`, `<input type="number" name="posicao" min="1" inputmode="numeric" value="${posAtual || ''}" placeholder="${novo ? 'no fim' : '—'}">`)}
+    </div>
+    <div class="g2">
+      ${campo('Total de páginas', `<input type="number" name="totalPaginas" min="1" inputmode="numeric" value="${l.totalPaginas ?? ''}">`)}
+      ${campo('Página atual', `<input type="number" name="paginaAtual" min="0" inputmode="numeric" value="${l.paginaAtual || 0}">`)}
+    </div>
+    <div class="g2">
+      ${campo('Início', `<input type="date" name="inicio" value="${esc(l.inicio)}">`)}
+      ${campo('Fim', `<input type="date" name="fim" value="${esc(l.fim)}">`)}
+    </div>
+    ${campo('Nota (1–5)', `<select name="avaliacao">${opcoes([1, 2, 3, 4, 5].map(n => [String(n), '★'.repeat(n)]), l.avaliacao ? String(l.avaliacao) : '', '— sem nota —')}</select>`)}
+    ${campo('Notas', `<textarea name="notas" rows="3">${esc(l.notas)}</textarea>`)}
+    <button class="btn pri cheio" type="submit">${novo ? 'Adicionar livro' : 'Salvar alterações'}</button>
+    ${novo ? '' : `<button class="btn perigo cheio" type="button" data-acao="excluir-livro" data-id="${l.id}">Excluir livro</button>`}
+  </form>`;
+  abrirSheet(novo ? 'Novo livro' : 'Editar livro', html, c => {
+    const f = $('#fLivro', c), el = f.elements;
+    el.status.addEventListener('change', () => {
+      if (el.status.value === 'Lendo' && !el.inicio.value) el.inicio.value = hoje();
+      if (el.status.value === 'Lido' && !el.fim.value) el.fim.value = hoje();
+    });
+    f.addEventListener('submit', e => { e.preventDefault(); salvarFormLivro(f, l, novo, posAtual); });
+    if (novo) setTimeout(() => el.titulo.focus(), 250);
+  });
+}
+function salvarFormLivro(form, l, novo, posAtual) {
+  const f = Object.fromEntries(new FormData(form));
+  const titulo = (f.titulo || '').trim();
+  if (!titulo) { toast('Informe o título do livro.', 'erro'); form.elements.titulo.focus(); return; }
+  const ant = novo ? null : l.status;
+  Object.assign(l, {
+    titulo, autor: (f.autor || '').trim(), categoria: f.categoria, dificuldade: f.dificuldade, formato: f.formato,
+    totalPaginas: num(f.totalPaginas) > 0 ? Math.round(num(f.totalPaginas)) : null,
+    paginaAtual: Math.round(positivo(num(f.paginaAtual)) ?? 0),
+    inicio: f.inicio || '', fim: f.fim || '', avaliacao: num(f.avaliacao), notas: (f.notas || '').trim()
+  });
+  // Status (com datas automáticas e entrada na fila)
+  l.status = ant ?? 'Na fila';
+  if (novo) { l.ordem = maxOrdem() + 1; state.livros.push(l); }
+  const virouLido = aplicarStatusLivro(l, f.status);
+  if (f.fim) l.fim = f.fim; // respeita data informada manualmente
+  if (l.totalPaginas && l.paginaAtual > l.totalPaginas) l.paginaAtual = l.totalPaginas;
+  // Posição na ordem de leitura
+  const pos = num(f.posicao);
+  if (['Lendo', 'Na fila'].includes(l.status) && pos && pos !== posAtual) moverParaPosicao(l.id, Math.round(pos));
+  salvar(); fecharSheet(); render();
+  if (virouLido && !l.avaliacao) abrirAvaliacao(l); else toast(novo ? 'Livro adicionado.' : 'Alterações salvas.');
+}
+function excluirLivro(id) {
+  const l = acharLivro(id); if (!l) return;
+  if (!confirm(`Excluir “${l.titulo}”? Essa ação não pode ser desfeita.`)) return;
+  state.livros = state.livros.filter(x => x.id !== id);
+  salvar(); fecharSheet(); render(); toast('Livro excluído.');
+}
+
+/* =========================================================
+   ABA CONFIGURAÇÕES
+   ========================================================= */
+function renderConfig() {
+  const c = state.config, d = diasDesde(state.ultimoBackup);
+  const linha = (chave, rot, ajuda, min, max, passo = 1) => `<label class="cfg-linha"><span>${rot}<small>${ajuda}</small></span>
+    <input type="number" data-config="${chave}" min="${min}" max="${max}" step="${passo}" inputmode="decimal" value="${c[chave]}"></label>`;
+  $('#conteudo').innerHTML = `
+    ${htmlAvisoBackup()}
+    <section class="bloco"><h2>Ritmo (usado nas previsões)</h2>
+      ${linha('horasSemana', 'Horas por semana para jogos', 'Padrão: 7 h', 0.5, 100, 0.5)}
+      ${linha('paginasDia', 'Páginas por dia de leitura', 'Padrão: 20', 1, 500)}
+    </section>
+    <section class="bloco"><h2>Metas anuais</h2>
+      ${linha('metaPlatinas', 'Platinas / 100% por ano', '', 0, 200)}
+      ${linha('metaLivros', 'Livros por ano', '', 0, 365)}
+    </section>
+    <section class="bloco"><h2>Aparência</h2>
+      <div class="segmentado" style="margin:0">
+        <button data-acao="tema" data-v="escuro" class="${c.tema !== 'claro' ? 'ativo' : ''}">🌙 Escuro</button>
+        <button data-acao="tema" data-v="claro" class="${c.tema === 'claro' ? 'ativo' : ''}">☀️ Claro</button>
+      </div>
+    </section>
+    <section class="bloco"><h2>Backup e exportação</h2>
+      <p class="ajuda" style="margin-bottom:12px">Os dados ficam salvos só neste navegador. Para passar do PC para o celular: exporte aqui e importe no outro aparelho.
+        <br>Último backup: <b>${d === null ? 'nunca' : d === 0 ? 'hoje' : `há ${d} dia(s)`}</b>.</p>
+      <div class="grade-btn">
+        <button class="btn pri" data-acao="exportar-backup">⬇ Exportar backup</button>
+        <button class="btn" data-acao="importar-backup">⬆ Importar backup</button>
+        <button class="btn" data-acao="csv-jogos">Jogos em CSV</button>
+        <button class="btn" data-acao="csv-livros">Livros em CSV</button>
+      </div>
+    </section>
+    <section class="bloco"><h2>Zona de perigo</h2>
+      <button class="btn perigo cheio" data-acao="apagar-tudo">Apagar tudo</button>
+    </section>
+    <p class="ajuda" style="text-align:center;margin:8px 0">${state.jogos.length} jogos · ${state.livros.length} livros${armazenamentoOk ? '' : ' · ⚠ armazenamento bloqueado neste navegador'}</p>`;
+  $$('[data-config]').forEach(inp => inp.addEventListener('change', () => {
+    const v = num(inp.value), k = inp.dataset.config;
+    if (v == null || v < Number(inp.min)) { inp.value = c[k]; toast('Valor inválido.', 'erro'); return; }
+    c[k] = Math.min(Number(inp.max), v); inp.value = c[k];
+    salvar(); toast('Configuração salva.');
+  }));
+}
+
+/* ---------- Backup (JSON) e CSV ---------- */
+function baixar(nome, conteudo, tipo) {
+  try {
+    const url = URL.createObjectURL(new Blob([conteudo], { type: tipo }));
+    const a = document.createElement('a');
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+    return true;
+  } catch (e) { toast('Não foi possível gerar o arquivo.', 'erro'); return false; }
+}
+function exportarBackup() {
+  const agora = new Date().toISOString();
+  const dados = Object.assign({ app: 'minha-estante', exportadoEm: agora }, state, { ultimoBackup: agora });
+  if (baixar(`estante-backup-${hoje()}.json`, JSON.stringify(dados, null, 2), 'application/json')) {
+    state.ultimoBackup = agora; salvar(); render(); toast('Backup exportado.');
+  }
+}
+function importarBackup(arquivo) {
+  const leitor = new FileReader();
+  leitor.onload = () => {
+    try {
+      const d = JSON.parse(leitor.result);
+      if (!d || !Array.isArray(d.jogos) || !Array.isArray(d.livros)) throw new Error('formato');
+      if (!confirm(`Importar ${d.jogos.length} jogos e ${d.livros.length} livros?\nIsso substitui os dados atuais deste aparelho.`)) return;
+      state = migrar(d);
+      state.ultimoBackup = new Date().toISOString();
+      salvar(); aplicarTema(); render(); toast('Backup importado.');
+    } catch (e) { toast('Arquivo inválido. Use um backup .json exportado por este app.', 'erro'); }
+  };
+  leitor.onerror = () => toast('Não foi possível ler o arquivo.', 'erro');
+  leitor.readAsText(arquivo);
+}
+// CSV com ";" e BOM (abre certo no Excel em português)
+const paraCSV = linhas => '\ufeff' + linhas.map(l => l.map(v => { const s = String(v ?? ''); return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }).join(';')).join('\r\n');
+function csvJogos() {
+  const cab = ['Nome', 'Plataforma', 'Status', 'Meta', 'Dificuldade', 'Dificuldade é estimativa', 'Horas estimadas', 'Horas é estimativa', 'Horas jogadas', 'Progresso %', 'Prioridade', 'Troféus online', 'Início', 'Conclusão', 'Duplicado', 'Versão escolhida', 'Notas'];
+  const linhas = state.jogos.slice().sort(porNome).map(j => [j.nome, j.plataforma, j.status, j.meta, j.dificuldade, j.estDif ? 'sim' : '', j.horasEstimadas, j.estHoras ? 'sim' : '', j.horasJogadas, j.progresso, j.prioridade, j.online, fmtData(j.inicio), fmtData(j.conclusao), j.grupo ? 'sim' : '', j.versaoEscolhida ? 'sim' : '', j.notas]);
+  baixar(`jogos-${hoje()}.csv`, paraCSV([cab, ...linhas]), 'text/csv;charset=utf-8');
+}
+function csvLivros() {
+  const cab = ['Posição', 'Título', 'Autor', 'Categoria', 'Dificuldade', 'Status', 'Formato', 'Total de páginas', 'Página atual', 'Início', 'Fim', 'Nota', 'Notas'];
+  const ordem = listaOrdem().map(l => l.id);
+  const linhas = state.livros.slice().sort((a, b) => (a.ordem || 0) - (b.ordem || 0)).map(l => [ordem.indexOf(l.id) + 1 || '', l.titulo, l.autor, l.categoria, l.dificuldade, l.status, l.formato, l.totalPaginas, l.paginaAtual, fmtData(l.inicio), fmtData(l.fim), l.avaliacao, l.notas]);
+  baixar(`livros-${hoje()}.csv`, paraCSV([cab, ...linhas]), 'text/csv;charset=utf-8');
+}
+function apagarTudo() {
+  if (!confirm('Apagar TODOS os jogos, livros e configurações deste aparelho?')) return;
+  const r = prompt('Confirmação final: digite APAGAR para continuar.');
+  if ((r || '').trim().toUpperCase() !== 'APAGAR') { toast('Nada foi apagado.'); return; }
+  state = estadoVazio(); salvar(); aplicarTema(); render(); toast('Tudo apagado.');
+}
+
+/* =========================================================
+   AÇÕES (delegação de cliques)
+   ========================================================= */
+const ACOES = {
+  'fechar-sheet': () => fecharSheet(),
+  'alternar-tema': () => { state.config.tema = state.config.tema === 'claro' ? 'escuro' : 'claro'; aplicarTema(); salvar(); if (abaAtual === 'config') render(); },
+  'tema': el => { state.config.tema = el.dataset.v; aplicarTema(); salvar(); render(); },
+  'ir-filtro': el => {
+    const f = JSON.parse(el.dataset.filtro);
+    if (f.aba === 'livros') { filtroL.vista = 'todos'; filtroL.status = f.status; filtroL.busca = ''; filtroL.categoria = ''; location.hash = 'livros'; }
+    else { Object.assign(filtroJ, { busca: '', plataforma: '', meta: '', prioridade: '', status: f.status }); location.hash = 'jogos'; }
+  },
+  // Jogos
+  'novo-jogo': () => formJogo(null),
+  'editar-jogo': el => formJogo(el.dataset.id),
+  'excluir-jogo': el => excluirJogo(el.dataset.id),
+  'status-jogo': el => menuStatus('jogo', el.dataset.id),
+  'set-status-jogo': el => {
+    const j = acharJogo(el.dataset.id); if (!j) return;
+    const ant = aplicarStatusJogo(j, el.dataset.s);
+    salvar(); fecharSheet(); render(); toast(`Status: ${j.status}`); avisarFoco(ant, j.status);
+  },
+  'toggle-filtros-j': () => { filtroJ.abertos = !filtroJ.abertos; $('#filtrosJ').hidden = !filtroJ.abertos; },
+  'limpar-filtros-j': () => { Object.assign(filtroJ, { busca: '', plataforma: '', status: '', meta: '', prioridade: '', ordem: 'prioridade' }); renderJogos(); },
+  'escolher-versao': el => menuVersao(el.dataset.grupo),
+  'set-versao': el => {
+    const j = acharJogo(el.dataset.id); if (!j) return;
+    state.jogos.forEach(x => { if (x.grupo === j.grupo) x.versaoEscolhida = x.id === j.id; });
+    salvar(); fecharSheet(); render(); toast(`Versão escolhida: ${j.plataforma}`);
+  },
+  'sugerir': () => { sugestao = calcularSugestao(); mostrarSugestao(); },
+  'sug-outra': () => { sugestao.idx++; mostrarSugestao(); },
+  'sug-comecar': el => {
+    const j = acharJogo(el.dataset.id); if (!j) return;
+    const ant = aplicarStatusJogo(j, 'Jogando'); salvar(); fecharSheet(); render();
+    toast(`Bom jogo: ${j.nome}`); avisarFoco(ant, 'Jogando');
+  },
+  'importar-texto': () => abrirImportacao(),
+  'confirmar-importacao': () => confirmarImportacao(),
+  // Livros
+  'novo-livro': () => formLivro(null),
+  'editar-livro': el => formLivro(el.dataset.id),
+  'excluir-livro': el => excluirLivro(el.dataset.id),
+  'status-livro': el => menuStatus('livro', el.dataset.id),
+  'set-status-livro': el => {
+    const l = acharLivro(el.dataset.id); if (!l) return;
+    const virouLido = aplicarStatusLivro(l, el.dataset.s);
+    salvar(); render();
+    if (virouLido) abrirAvaliacao(l); else { fecharSheet(); toast(`Status: ${l.status}`); }
+  },
+  'vista-livros': el => { filtroL.vista = el.dataset.v; renderLivros(); },
+  'subir': el => moverLivro(el.dataset.id, -1),
+  'descer': el => moverLivro(el.dataset.id, 1),
+  'avaliar': el => {
+    const l = acharLivro(el.dataset.id); if (!l) return;
+    l.avaliacao = Number(el.dataset.n); salvar(); fecharSheet(); render(); toast(`Nota ${l.avaliacao}/5 salva.`);
+  },
+  // Configurações
+  'exportar-backup': () => exportarBackup(),
+  'importar-backup': () => { const i = $('#arquivoBackup'); i.value = ''; i.click(); },
+  'csv-jogos': () => csvJogos(),
+  'csv-livros': () => csvLivros(),
+  'apagar-tudo': () => apagarTudo()
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-acao]');
+  if (!el || el.disabled) return;
+  const fn = ACOES[el.dataset.acao];
+  if (fn) { e.preventDefault(); e.stopPropagation(); fn(el, e); }
+});
+// Formulário rápido de página (livro em leitura)
+document.addEventListener('submit', e => {
+  const f = e.target.closest('form[data-pagina]');
+  if (f) { e.preventDefault(); salvarPagina(f.dataset.pagina); }
+});
+$('#sheetFundo').addEventListener('click', e => { if (e.target.id === 'sheetFundo') fecharSheet(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#sheetFundo').hidden) fecharSheet(); });
+$('#arquivoBackup').addEventListener('change', e => { const a = e.target.files && e.target.files[0]; if (a) importarBackup(a); });
+window.addEventListener('hashchange', () => irPara(location.hash.slice(1)));
+
+/* =========================================================
+   INICIALIZAÇÃO
+   ========================================================= */
+state = carregar();
+if (!state) { state = dadosIniciais(); salvar(); }
+aplicarTema();
+irPara(location.hash.slice(1) || 'painel');
+if (!armazenamentoOk) setTimeout(() => toast('Este navegador está bloqueando o armazenamento. Use o backup para não perder dados.', 'erro'), 600);
+</script>
+</body>
+</html>
