@@ -243,6 +243,29 @@ button.chip{cursor:pointer}
 .toast.erro{background:var(--perigo);color:#fff}
 .toast.aviso{background:var(--aviso);color:#1a1205}
 
+/* Nuvem, login e sincronização */
+.topo-acoes{display:flex;gap:8px;align-items:center}
+.nuvem{min-height:36px;padding:0 11px;border-radius:99px;border:1px solid var(--borda);background:var(--card2);font-size:12.5px;font-weight:650;color:var(--txt2);display:inline-flex;align-items:center;gap:6px}
+.nuvem .bolinha{width:8px;height:8px;border-radius:50%;background:var(--txt3)}
+.nuvem.ok .bolinha{background:var(--ok)}
+.nuvem.sync .bolinha,.nuvem.pendente .bolinha{background:var(--pri);animation:pulsa 1s infinite}
+.nuvem.erro .bolinha{background:var(--aviso)}
+@keyframes pulsa{50%{opacity:.25}}
+.login{position:fixed;inset:0;z-index:70;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}
+.login-caixa{width:100%;max-width:380px}
+.login h2{font-size:26px;margin-bottom:6px;letter-spacing:-.02em}
+.login .logo{width:56px;height:56px;border-radius:16px;background:var(--pri);color:var(--pri-txt);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:14px}
+.erro-txt{color:var(--perigo);font-size:13px;margin:0;min-height:18px}
+.sync-item{display:grid;gap:6px;padding:12px 0;border-top:1px solid var(--borda)}
+.sync-item b{font-size:14.5px}
+.sync-item small{color:var(--txt2);font-size:12.5px}
+.integracao{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0}
+.integracao+.integracao{border-top:1px solid var(--borda)}
+.integracao span{font-size:14px;font-weight:650}
+.integracao small{display:block;color:var(--txt3);font-size:12px;font-weight:400}
+.carregando{text-align:center;color:var(--txt2);padding:30px 10px}
+.carregando::before{content:"";display:block;width:28px;height:28px;margin:0 auto 12px;border-radius:50%;border:3px solid var(--card2);border-top-color:var(--pri);animation:gira .8s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
 @keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -252,7 +275,10 @@ button.chip{cursor:pointer}
 <header class="topo">
   <div class="topo-int">
     <div><h1 id="tituloAba">Painel</h1><small>Minha Estante</small></div>
-    <button class="icone-btn" data-acao="alternar-tema" aria-label="Alternar tema" id="btnTema">◐</button>
+    <div class="topo-acoes">
+      <button class="nuvem" id="btnNuvem" data-acao="conta" hidden><span class="bolinha"></span><span id="txtNuvem">Nuvem</span></button>
+      <button class="icone-btn" data-acao="alternar-tema" aria-label="Alternar tema" id="btnTema">◐</button>
+    </div>
   </div>
 </header>
 
@@ -273,6 +299,18 @@ button.chip{cursor:pointer}
     <div class="sheet-cab"><h2 id="sheetTitulo"></h2><button class="icone-btn" data-acao="fechar-sheet" aria-label="Fechar">✕</button></div>
     <div class="sheet-corpo" id="sheetCorpo"></div>
   </div>
+</div>
+
+<!-- Login (só aparece na versão hospedada com Supabase) -->
+<div class="login" id="telaLogin" hidden>
+  <form class="login-caixa form" id="formLogin" novalidate>
+    <div><div class="logo">📚</div><h2>Minha Estante</h2><p class="ajuda">Entre para ver seus jogos e livros em qualquer aparelho.</p></div>
+    <label class="campo"><span class="rotulo">E-mail</span><input type="email" name="email" autocomplete="email" inputmode="email" required></label>
+    <label class="campo"><span class="rotulo">Senha</span><input type="password" name="senha" autocomplete="current-password" required></label>
+    <p class="erro-txt" id="erroLogin"></p>
+    <button class="btn pri cheio" type="submit" id="btnEntrar">Entrar</button>
+    <button class="btn link cheio" type="button" data-acao="usar-offline">Usar só neste aparelho por enquanto</button>
+  </form>
 </div>
 
 <input type="file" id="arquivoBackup" accept=".json,application/json" hidden>
@@ -328,13 +366,15 @@ const configPadrao = () => ({ horasSemana: 7, paginasDia: 20, metaPlatinas: 6, m
 const jogoPadrao = () => ({
   id: uid(), nome: '', plataforma: 'PS4', status: 'Na fila', meta: 'Platinar', dificuldade: null,
   horasEstimadas: null, horasJogadas: 0, progresso: 0, prioridade: 'Média', online: ONLINE[0],
-  inicio: '', conclusao: '', notas: '', estDif: false, estHoras: false, grupo: null, versaoEscolhida: false
+  inicio: '', conclusao: '', notas: '', estDif: false, estHoras: false, grupo: null, versaoEscolhida: false,
+  steamAppId: null, psnId: null // preenchidos pela sincronização
 });
 const livroPadrao = () => ({
   id: uid(), titulo: '', autor: '', categoria: 'Filosofia', dificuldade: 'Média', status: 'Na fila', formato: 'Físico',
   totalPaginas: null, paginaAtual: 0, ordem: 0, semPosicao: false, inicio: '', fim: '', avaliacao: null, notas: ''
 });
-const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null });
+const integracoesPadrao = () => ({ steam: null, psn: null, ignorados: { steam: [], psn: [] } });
+const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null, integracoes: integracoesPadrao() });
 
 /* =========================================================
    DADOS INICIAIS
@@ -427,6 +467,7 @@ function dadosIniciais() {
   LIVROS_SEM_POSICAO.forEach(([titulo, autor, categoria, dificuldade, notas], i) => st.livros.push(Object.assign(livroPadrao(), {
     titulo, autor, categoria, dificuldade, notas: notas || '', ordem: BASE_LIVROS.length + i + 1, semPosicao: true
   })));
+  st.semente = true; // marca: dados iniciais, ainda não editados
   return st;
 }
 
@@ -443,6 +484,8 @@ function migrar(d) {
   st.config = Object.assign(configPadrao(), d.config || {});
   st.jogos = (d.jogos || []).map(j => Object.assign(jogoPadrao(), j));
   st.livros = (d.livros || []).map(l => Object.assign(livroPadrao(), l));
+  st.integracoes = Object.assign(integracoesPadrao(), d.integracoes || {});
+  st.integracoes.ignorados = Object.assign({ steam: [], psn: [] }, st.integracoes.ignorados || {});
   delete st.app; delete st.exportadoEm;
   return st;
 }
@@ -459,9 +502,17 @@ function carregar() {
   } catch (e) { console.warn('Falha ao ler dados salvos', e); }
   return null;
 }
-function salvar() {
+// Grava só no aparelho
+function salvarLocal() {
   try { localStorage.setItem(CHAVE, JSON.stringify(state)); return true; }
   catch (e) { toast('Não foi possível salvar neste navegador. Exporte um backup.', 'erro'); return false; }
+}
+// Grava no aparelho e agenda o envio para a nuvem (quando logado)
+function salvar() {
+  delete state.semente;
+  const ok = salvarLocal();
+  marcarAlteracao();
+  return ok;
 }
 
 /* =========================================================
@@ -566,6 +617,7 @@ function limparGrupos() {
    ABA PAINEL
    ========================================================= */
 function htmlAvisoBackup() {
+  if (typeof nuvem !== 'undefined' && nuvem.usuario) return ''; // logado: a nuvem já guarda tudo
   const d = diasDesde(state.ultimoBackup);
   if (d !== null && d <= 7) return '';
   const txt = d === null ? 'Você ainda não fez backup.' : `Último backup há ${d} dias.`;
@@ -691,6 +743,7 @@ function renderJogos() {
       <button class="btn pri" data-acao="novo-jogo">＋ Adicionar</button>
       <button class="btn" data-acao="sugerir">🎲 Sugerir próximo</button>
       <button class="btn" data-acao="importar-texto">📋 Colar lista</button>
+      ${nuvem.usuario ? '<button class="btn" data-acao="abrir-sync">🔄 Steam / PSN</button>' : ''}
     </div>
     ${n > 2 ? `<div class="alerta"><b>Foco:</b> você tem ${n} jogos em “Jogando”. Termine um antes de começar outro.</div>` : ''}
     <div class="busca-linha">
@@ -1243,6 +1296,7 @@ function renderConfig() {
     <input type="number" data-config="${chave}" min="${min}" max="${max}" step="${passo}" inputmode="decimal" value="${c[chave]}"></label>`;
   $('#conteudo').innerHTML = `
     ${htmlAvisoBackup()}
+    ${htmlContaConfig()}
     <section class="bloco"><h2>Ritmo (usado nas previsões)</h2>
       ${linha('horasSemana', 'Horas por semana para jogos', 'Padrão: 7 h', 0.5, 100, 0.5)}
       ${linha('paginasDia', 'Páginas por dia de leitura', 'Padrão: 20', 1, 500)}
@@ -1258,7 +1312,7 @@ function renderConfig() {
       </div>
     </section>
     <section class="bloco"><h2>Backup e exportação</h2>
-      <p class="ajuda" style="margin-bottom:12px">Os dados ficam salvos só neste navegador. Para passar do PC para o celular: exporte aqui e importe no outro aparelho.
+      <p class="ajuda" style="margin-bottom:12px">${nuvem.usuario ? 'Seus dados já ficam na nuvem. O backup .json é uma cópia extra de segurança.' : 'Os dados ficam salvos só neste navegador. Para passar do PC para o celular: exporte aqui e importe no outro aparelho.'}
         <br>Último backup: <b>${d === null ? 'nunca' : d === 0 ? 'hoje' : `há ${d} dia(s)`}</b>.</p>
       <div class="grade-btn">
         <button class="btn pri" data-acao="exportar-backup">⬇ Exportar backup</button>
@@ -1304,8 +1358,9 @@ function importarBackup(arquivo) {
       if (!d || !Array.isArray(d.jogos) || !Array.isArray(d.livros)) throw new Error('formato');
       if (!confirm(`Importar ${d.jogos.length} jogos e ${d.livros.length} livros?\nIsso substitui os dados atuais deste aparelho.`)) return;
       state = migrar(d);
+      delete state.semente;
       state.ultimoBackup = new Date().toISOString();
-      salvar(); aplicarTema(); render(); toast('Backup importado.');
+      salvar(); aplicarTema(); render(); toast(nuvem.usuario ? 'Backup importado e enviado para a nuvem.' : 'Backup importado.');
     } catch (e) { toast('Arquivo inválido. Use um backup .json exportado por este app.', 'erro'); }
   };
   leitor.onerror = () => toast('Não foi possível ler o arquivo.', 'erro');
@@ -1328,7 +1383,355 @@ function apagarTudo() {
   if (!confirm('Apagar TODOS os jogos, livros e configurações deste aparelho?')) return;
   const r = prompt('Confirmação final: digite APAGAR para continuar.');
   if ((r || '').trim().toUpperCase() !== 'APAGAR') { toast('Nada foi apagado.'); return; }
-  state = estadoVazio(); salvar(); aplicarTema(); render(); toast('Tudo apagado.');
+  state = estadoVazio(); salvar(); // logado: também apaga na nuvem aplicarTema(); render(); toast('Tudo apagado.');
+}
+
+
+/* =========================================================
+   NUVEM (Supabase): login e sincronização entre aparelhos
+   Só liga quando o app roda na Vercel (rota api/config).
+   Fora dela (arquivo local, GitHub Pages) tudo segue só no aparelho.
+   ========================================================= */
+const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+const CHAVE_META = CHAVE + '.nuvem';
+const nuvem = { ativo: false, cli: null, usuario: null, integracoes: {}, enviando: false, denovo: false, timer: null, alteracoes: 0, estado: '', ultimaSync: null };
+
+// Metadados da sincronização deste aparelho: { userId, versao, pendente, offline }
+function lerMeta() { try { return JSON.parse(localStorage.getItem(CHAVE_META)) || {}; } catch (e) { return {}; } }
+function gravarMeta(m) { try { localStorage.setItem(CHAVE_META, JSON.stringify(m)); } catch (e) { /* ignora */ } }
+
+const TEXTO_NUVEM = { ok: 'Salvo', sync: 'Sincronizando', pendente: 'Salvando…', erro: 'Offline', sair: 'Entrar' };
+function indicador(estado) {
+  nuvem.estado = estado;
+  const b = $('#btnNuvem'); if (!b) return;
+  b.hidden = !nuvem.ativo;
+  b.className = 'nuvem ' + estado;
+  $('#txtNuvem').textContent = TEXTO_NUVEM[estado] || 'Nuvem';
+}
+function marcarAlteracao() {
+  nuvem.alteracoes++;
+  const m = lerMeta();
+  if (!m.pendente) { m.pendente = true; gravarMeta(m); }
+  if (nuvem.ativo && nuvem.usuario) { clearTimeout(nuvem.timer); nuvem.timer = setTimeout(enviar, 1200); indicador('pendente'); }
+}
+function carregarScript(src) {
+  return new Promise((ok, falha) => {
+    const sc = document.createElement('script');
+    sc.src = src; sc.onload = ok; sc.onerror = falha;
+    document.head.appendChild(sc);
+  });
+}
+
+async function iniciarNuvem() {
+  let cfg = null;
+  try {
+    const r = await fetch('api/config', { cache: 'no-store' });
+    if (r.ok && (r.headers.get('content-type') || '').includes('json')) cfg = await r.json();
+  } catch (e) { /* sem servidor: modo local */ }
+  if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) return;
+  try { if (!window.supabase) await carregarScript(SUPABASE_CDN); }
+  catch (e) { toast('Sem internet para entrar. Usando os dados deste aparelho.', 'aviso'); return; }
+  nuvem.cli = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+  nuvem.ativo = true;
+  nuvem.integracoes = cfg.integracoes || {};
+  let sessao = null;
+  try { const { data } = await nuvem.cli.auth.getSession(); sessao = data && data.session; } catch (e) { /* ignora */ }
+  if (sessao) { nuvem.usuario = sessao.user; await sincronizar(true); }
+  else { indicador('sair'); if (!lerMeta().offline) mostrarLogin(); }
+  render();
+}
+
+function mostrarLogin() {
+  if (!nuvem.ativo) return;
+  $('#telaLogin').hidden = false;
+  $('#erroLogin').textContent = '';
+  setTimeout(() => { try { $('#formLogin').elements.email.focus(); } catch (e) { /* ignora */ } }, 100);
+}
+$('#formLogin').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.target, btn = $('#btnEntrar');
+  const email = f.elements.email.value.trim(), senha = f.elements.senha.value;
+  if (!email || !senha) { $('#erroLogin').textContent = 'Preencha e-mail e senha.'; return; }
+  btn.disabled = true; btn.textContent = 'Entrando…'; $('#erroLogin').textContent = '';
+  try {
+    const { data, error } = await nuvem.cli.auth.signInWithPassword({ email, password: senha });
+    if (error) {
+      $('#erroLogin').textContent = /invalid login/i.test(error.message) ? 'E-mail ou senha incorretos.' : error.message;
+      return;
+    }
+    nuvem.usuario = data.user;
+    const m = lerMeta(); delete m.offline; gravarMeta(m);
+    $('#telaLogin').hidden = true; f.elements.senha.value = '';
+    await sincronizar(true);
+    render();
+    toast('Conectado. Seus dados estão na nuvem.');
+  } catch (err) {
+    $('#erroLogin').textContent = 'Sem conexão. Tente de novo.';
+  } finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+});
+
+// Compara este aparelho com a nuvem e decide quem vale
+async function sincronizar(inicial = false) {
+  if (!nuvem.ativo || !nuvem.usuario) return;
+  indicador('sync');
+  const uid = nuvem.usuario.id;
+  let m = lerMeta();
+  if (m.userId && m.userId !== uid) { m = { userId: uid }; gravarMeta(m); }
+  let resp;
+  try { resp = await nuvem.cli.from('estante').select('dados,versao').eq('user_id', uid).maybeSingle(); }
+  catch (e) { resp = { error: e }; }
+  if (resp.error) { indicador('erro'); if (inicial) toast('Sem conexão com a nuvem. Usando os dados deste aparelho.', 'aviso'); return; }
+  const nuvemDados = resp.data;
+  if (!nuvemDados) { // primeira vez: sobe o que está no aparelho
+    gravarMeta({ userId: uid, versao: null, pendente: true });
+    await enviar();
+    return;
+  }
+  if (m.userId === uid && m.versao === nuvemDados.versao) {
+    if (m.pendente) await enviar(); else { nuvem.ultimaSync = new Date(); indicador('ok'); }
+    return;
+  }
+  // A nuvem mudou desde a última vez. Este aparelho também tem alterações?
+  const alteradoAqui = m.userId === uid ? !!m.pendente : !state.semente;
+  if (alteradoAqui) {
+    const usarNuvem = confirm('Há alterações neste aparelho e também na nuvem (feitas em outro aparelho).\n\nOK = usar os dados da NUVEM\nCancelar = manter os DESTE aparelho e enviar para a nuvem');
+    if (!usarNuvem) {
+      gravarMeta({ userId: uid, versao: nuvemDados.versao, pendente: true });
+      await enviar();
+      return;
+    }
+  }
+  adotarNuvem(nuvemDados, uid, !inicial && m.userId === uid);
+}
+function adotarNuvem(dados, uid, avisar) {
+  state = migrar(dados.dados);
+  salvarLocal();
+  gravarMeta({ userId: uid, versao: dados.versao, pendente: false });
+  nuvem.alteracoes++; // invalida envios em andamento com dados antigos
+  nuvem.ultimaSync = new Date();
+  aplicarTema();
+  if ($('#sheetFundo').hidden) render();
+  indicador('ok');
+  if (avisar) toast('Atualizado com as mudanças de outro aparelho.');
+}
+
+// Envia o estado atual. Usa "versao" para não sobrescrever mudanças de outro aparelho.
+async function enviar() {
+  if (!nuvem.ativo || !nuvem.usuario) return;
+  clearTimeout(nuvem.timer);
+  if (nuvem.enviando) { nuvem.denovo = true; return; }
+  nuvem.enviando = true;
+  indicador('sync');
+  const uid = nuvem.usuario.id, m = lerMeta(), marco = nuvem.alteracoes;
+  const dados = JSON.parse(JSON.stringify(state));
+  let conflito = false;
+  try {
+    let novaVersao;
+    if (m.versao == null || m.userId !== uid) {
+      const { data, error } = await nuvem.cli.from('estante').insert({ user_id: uid, dados, versao: 1 }).select('versao').single();
+      if (error) { if (error.code === '23505') conflito = true; else throw error; }
+      else novaVersao = data.versao;
+    } else {
+      const { data, error } = await nuvem.cli.from('estante')
+        .update({ dados, versao: m.versao + 1, atualizado_em: new Date().toISOString() })
+        .eq('user_id', uid).eq('versao', m.versao).select('versao');
+      if (error) throw error;
+      if (!data || !data.length) conflito = true; else novaVersao = data[0].versao;
+    }
+    if (!conflito) {
+      const mudouDurante = nuvem.alteracoes !== marco;
+      gravarMeta({ userId: uid, versao: novaVersao, pendente: mudouDurante });
+      nuvem.ultimaSync = new Date();
+      indicador(mudouDurante ? 'pendente' : 'ok');
+      if (mudouDurante) nuvem.denovo = true;
+    }
+  } catch (e) {
+    console.warn('Falha ao enviar para a nuvem', e);
+    indicador('erro');
+  } finally {
+    nuvem.enviando = false;
+  }
+  if (conflito) { nuvem.denovo = false; await sincronizar(false); return; }
+  if (nuvem.denovo) { nuvem.denovo = false; nuvem.timer = setTimeout(enviar, 600); }
+}
+
+// Ao voltar para o app, busca novidades; ao reconectar, envia o que ficou pendente
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || !nuvem.usuario || nuvem.enviando || !$('#sheetFundo').hidden) return;
+  if (lerMeta().pendente) enviar(); else sincronizar(false);
+});
+window.addEventListener('online', () => { if (nuvem.usuario && lerMeta().pendente) enviar(); });
+setInterval(() => { if (nuvem.usuario && !nuvem.enviando && lerMeta().pendente) enviar(); }, 30000);
+
+function abrirConta() {
+  if (!nuvem.usuario) { mostrarLogin(); return; }
+  const m = lerMeta();
+  const quando = nuvem.ultimaSync ? nuvem.ultimaSync.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+  abrirSheet('Conta e nuvem', `<div class="form">
+    <p class="ajuda">Conectado como <b>${esc(nuvem.usuario.email || '')}</b>.<br>
+      Situação: <b>${m.pendente ? 'alterações aguardando envio' : 'tudo salvo na nuvem'}</b><br>Última sincronização: ${quando}</p>
+    <button class="btn pri cheio" data-acao="sync-agora">Sincronizar agora</button>
+    <button class="btn perigo cheio" data-acao="sair">Sair desta conta</button>
+  </div>`);
+}
+async function sairDaConta() {
+  if (lerMeta().pendente && !confirm('Há alterações ainda não enviadas para a nuvem. Sair mesmo assim? Elas serão perdidas.')) return;
+  if (!confirm('Sair e apagar os dados DESTE aparelho? Eles continuam guardados na nuvem.')) return;
+  try { await nuvem.cli.auth.signOut(); } catch (e) { /* ignora */ }
+  try { localStorage.removeItem(CHAVE); localStorage.removeItem(CHAVE_META); } catch (e) { /* ignora */ }
+  location.reload();
+}
+
+/* ---------- Seção "Conta e integrações" nas Configurações ---------- */
+function htmlContaConfig() {
+  if (!nuvem.ativo) return `<section class="bloco"><h2>Conta e integrações</h2>
+    <p class="ajuda">Você está na versão só-local. Na versão hospedada na Vercel você entra com login, os dados ficam na nuvem e dá para sincronizar Steam e PSN.</p></section>`;
+  if (!nuvem.usuario) return `<section class="bloco"><h2>Conta e integrações</h2>
+    <p class="ajuda" style="margin-bottom:12px">Entre para guardar seus dados na nuvem e usar em qualquer aparelho.</p>
+    <button class="btn pri cheio" data-acao="conta">Entrar</button></section>`;
+  const quando = iso => iso ? new Date(iso).toLocaleDateString('pt-BR') : 'nunca';
+  const linha = (fonte, nome, ligado, ajuda) => `<div class="integracao"><span>${nome}<small>${ligado ? `Última sincronização: ${quando(state.integracoes[fonte])}` : ajuda}</small></span>
+    <button class="btn mini ${ligado ? 'pri' : ''}" data-acao="sync-fonte" data-fonte="${fonte}" ${ligado ? '' : 'disabled'}>Sincronizar</button></div>`;
+  return `<section class="bloco"><h2>Conta e integrações</h2>
+    <div class="integracao"><span>${esc(nuvem.usuario.email || '')}<small>Dados salvos na nuvem</small></span><button class="btn mini" data-acao="conta">Conta</button></div>
+    ${linha('steam', 'Steam', nuvem.integracoes.steam, 'Configure STEAM_API_KEY e STEAM_ID na Vercel')}
+    ${linha('psn', 'PlayStation Network', nuvem.integracoes.psn, 'Configure PSN_NPSSO na Vercel')}
+    <p class="ajuda" style="margin-top:8px">A PSN usa uma integração não oficial: o token NPSSO expira em cerca de 2 meses e precisa ser renovado.</p>
+  </section>`;
+}
+
+/* =========================================================
+   INTEGRAÇÕES: Steam e PSN
+   O servidor (api/steam, api/psn) devolve uma lista padronizada:
+   { chave, nome, plataforma, horas, progresso, concluido100, conclusao, inicio, temConquistas, temPlatina }
+   Aqui o app compara com o que já existe e mostra uma revisão antes de gravar.
+   ========================================================= */
+async function chamarApi(caminho) {
+  let token = null;
+  try { const { data } = await nuvem.cli.auth.getSession(); token = data && data.session && data.session.access_token; } catch (e) { /* ignora */ }
+  if (!token) { fecharSheet(); mostrarLogin(); throw new Error('Entre de novo para sincronizar.'); }
+  let r;
+  try { r = await fetch(caminho, { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' }); }
+  catch (e) { throw new Error('Sem conexão com o servidor.'); }
+  let corpo = {};
+  try { corpo = await r.json(); } catch (e) { /* ignora */ }
+  if (!r.ok) throw new Error(corpo.erro || `Erro ${r.status} no servidor.`);
+  return corpo;
+}
+function menuSync() {
+  abrirSheet('Sincronizar jogos', `<p class="ajuda" style="margin-bottom:12px">Atualiza horas, % de troféus/conquistas e marca platinas/100%. Prioridade, notas, meta e dificuldade não mudam. Você revisa tudo antes de gravar.</p>
+    <div class="menu-opcoes">
+      <button class="opcao" data-acao="sync-fonte" data-fonte="steam" ${nuvem.integracoes.steam ? '' : 'disabled'}>🖥️ Steam${nuvem.integracoes.steam ? '' : ' (não configurada)'}</button>
+      <button class="opcao" data-acao="sync-fonte" data-fonte="psn" ${nuvem.integracoes.psn ? '' : 'disabled'}>🎮 PlayStation Network${nuvem.integracoes.psn ? '' : ' (não configurada)'}</button>
+    </div>`);
+}
+let planoSync = null, idSync = 0;
+async function sincronizarFonte(fonte) {
+  const meu = ++idSync;
+  abrirSheet(fonte === 'steam' ? 'Sincronizar Steam' : 'Sincronizar PSN',
+    `<div class="carregando">Buscando seus jogos na ${fonte === 'steam' ? 'Steam (pode levar até 1 minuto)' : 'PSN'}…</div>`);
+  try {
+    const resp = await chamarApi('api/' + fonte);
+    if (meu !== idSync || $('#sheetFundo').hidden) return; // usuário fechou
+    mostrarPlano(fonte, resp);
+  } catch (e) {
+    if (meu !== idSync || $('#sheetFundo').hidden) return;
+    $('#sheetCorpo').innerHTML = `<div class="alerta">${esc(e.message)}</div><button class="btn cheio" data-acao="fechar-sheet">Fechar</button>`;
+  }
+}
+// Semelhança de nomes (ignora palavras como "Remastered", "Edition"…) para sugerir vínculos
+const PALAVRAS_FRACAS = new Set(['the', 'of', 'a', 'o', 'de', 'da', 'do', 'em', 'uma', 'edition', 'edicao', 'remastered', 'remasterizado', 'remasterizada', 'remaster', 'ps4', 'ps5', 'definitive', 'complete', 'completa', 'deluxe', 'goty', 'year', 'game', 'digital']);
+const tokensNome = s => new Set(norm(s).split(' ').filter(w => w && !PALAVRAS_FRACAS.has(w)));
+function semelhanca(a, b) {
+  const A = tokensNome(a), B = tokensNome(b);
+  if (!A.size || !B.size) return 0;
+  let iguais = 0; A.forEach(w => { if (B.has(w)) iguais++; });
+  return iguais / Math.max(A.size, B.size);
+}
+function planejarSync(fonte, itens) {
+  const campo = fonte === 'steam' ? 'steamAppId' : 'psnId';
+  const ignorados = new Set((state.integracoes.ignorados[fonte] || []).map(String));
+  const usados = new Set(), atualizar = [], novos = [];
+  for (const it of itens) {
+    if (!it || !it.plataforma || !it.chave) continue;
+    let j = state.jogos.find(x => String(x[campo] || '') === String(it.chave));
+    if (!j) j = state.jogos.find(x => !x[campo] && !usados.has(x.id) && x.plataforma === it.plataforma && norm(x.nome) === norm(it.nome));
+    if (j) { usados.add(j.id); atualizar.push({ j, it }); continue; }
+    if (ignorados.has(String(it.chave))) continue;
+    novos.push({ it, sugestao: '' });
+  }
+  for (const n of novos) {
+    let melhor = null, nota = 0;
+    for (const x of state.jogos) {
+      if (x[campo] || usados.has(x.id) || x.plataforma !== n.it.plataforma) continue;
+      const s = semelhanca(x.nome, n.it.nome);
+      if (s > nota) { nota = s; melhor = x; }
+    }
+    if (melhor && nota >= 0.5) { n.sugestao = melhor.id; usados.add(melhor.id); }
+  }
+  novos.sort((a, b) => (b.sugestao ? 1 : 0) - (a.sugestao ? 1 : 0) || (b.it.horas || 0) - (a.it.horas || 0));
+  return { fonte, campo, atualizar, novos };
+}
+function descricaoItem(it) {
+  return [it.plataforma, it.horas != null ? `${fmtNum(it.horas)} h` : null, it.progresso != null ? `${it.progresso}% ${it.plataforma === 'Steam' ? 'conquistas' : 'troféus'}` : null, it.concluido100 ? '🏆 completo' : null].filter(Boolean).join(' · ');
+}
+function mostrarPlano(fonte, resp) {
+  planoSync = planejarSync(fonte, resp.itens || []);
+  const p = planoSync;
+  const concluiraoAgora = p.atualizar.filter(({ j, it }) => it.concluido100 && j.status !== 'Platinado/100%').length;
+  const opcoesVinculo = n => state.jogos.filter(x => x.plataforma === n.it.plataforma && !x[p.campo]).sort(porNome)
+    .map(x => `<option value="${x.id}"${x.id === n.sugestao ? ' selected' : ''}>É o mesmo que: ${esc(x.nome)}</option>`).join('');
+  $('#sheetCorpo').innerHTML = `<div class="form">
+    ${(resp.avisos || []).map(a => `<div class="alerta" style="margin:0">${esc(a)}</div>`).join('')}
+    <div class="resumo"><b>${p.atualizar.length}</b> jogo(s) já cadastrado(s) serão atualizados${concluiraoAgora ? `, sendo <b>${concluiraoAgora}</b> marcado(s) como Platinado/100%` : ''}.<br>
+      <b>${p.novos.length}</b> jogo(s) novo(s) encontrado(s)${p.novos.some(n => n.sugestao) ? ' — alguns parecem ser jogos que você já tem, confira os vínculos' : ''}.</div>
+    ${p.novos.length ? `<div class="acoes-linha" style="margin:0">
+      <button class="btn mini" type="button" data-acao="sync-todos" data-v="novo">Adicionar todos</button>
+      <button class="btn mini" type="button" data-acao="sync-todos" data-v="pular">Pular todos</button></div>
+      <div>${p.novos.map((n, i) => `<div class="sync-item"><b>${esc(n.it.nome)}</b><small>${esc(descricaoItem(n.it))}</small>
+        <select data-sync="${i}"><option value="novo"${n.sugestao ? '' : ' selected'}>Adicionar como novo jogo</option>
+          <option value="pular">Pular desta vez</option><option value="ignorar">Ignorar sempre</option>${opcoesVinculo(n)}</select></div>`).join('')}</div>` : ''}
+    <button class="btn pri cheio" data-acao="aplicar-sync">Aplicar</button>
+  </div>`;
+}
+// Copia os dados vindos da Steam/PSN para um jogo. Retorna true se ele foi concluído agora.
+function aplicarDadosSync(j, it, campo) {
+  j[campo] = it.chave;
+  if (it.horas != null) j.horasJogadas = it.horas;
+  if (it.progresso != null) j.progresso = Math.max(0, Math.min(100, Math.round(it.progresso)));
+  if (it.inicio && !j.inicio && j.status !== 'Na fila') j.inicio = it.inicio;
+  if (it.concluido100 && j.status !== 'Platinado/100%') {
+    j.status = 'Platinado/100%'; j.progresso = 100; j.conclusao = it.conclusao || hoje();
+    return true;
+  }
+  return false;
+}
+function novoJogoSync(it) {
+  const meta = it.plataforma === 'Steam' ? (it.temConquistas === false ? 'Só zerar' : '100% conquistas') : 'Platinar';
+  return Object.assign(jogoPadrao(), { nome: it.nome, plataforma: it.plataforma, meta, status: 'Na fila' });
+}
+function aplicarPlano() {
+  const p = planoSync; if (!p) return;
+  let atualizados = 0, criados = 0, concluidos = 0, ignorados = 0;
+  p.atualizar.forEach(({ j, it }) => { if (aplicarDadosSync(j, it, p.campo)) concluidos++; atualizados++; });
+  $$('[data-sync]').forEach(sel => {
+    const n = p.novos[Number(sel.dataset.sync)]; if (!n) return;
+    const v = sel.value;
+    if (v === 'pular') return;
+    if (v === 'ignorar') { state.integracoes.ignorados[p.fonte].push(String(n.it.chave)); ignorados++; return; }
+    if (v === 'novo') {
+      const j = novoJogoSync(n.it);
+      state.jogos.push(j);
+      if (aplicarDadosSync(j, n.it, p.campo)) concluidos++;
+      criados++; return;
+    }
+    const j = acharJogo(v);
+    if (j) { if (aplicarDadosSync(j, n.it, p.campo)) concluidos++; atualizados++; }
+  });
+  state.integracoes[p.fonte] = new Date().toISOString();
+  planoSync = null;
+  salvar(); fecharSheet(); render();
+  toast(`${atualizados} atualizado(s), ${criados} novo(s)${concluidos ? `, ${concluidos} concluído(s)` : ''}${ignorados ? `, ${ignorados} ignorado(s)` : ''}.`);
 }
 
 /* =========================================================
@@ -1393,7 +1796,16 @@ const ACOES = {
   'importar-backup': () => { const i = $('#arquivoBackup'); i.value = ''; i.click(); },
   'csv-jogos': () => csvJogos(),
   'csv-livros': () => csvLivros(),
-  'apagar-tudo': () => apagarTudo()
+  'apagar-tudo': () => apagarTudo(),
+  // Nuvem e integrações
+  'conta': () => abrirConta(),
+  'usar-offline': () => { const m = lerMeta(); m.offline = true; gravarMeta(m); $('#telaLogin').hidden = true; indicador('sair'); },
+  'sync-agora': async () => { fecharSheet(); if (lerMeta().pendente) await enviar(); else await sincronizar(false); toast(nuvem.estado === 'ok' ? 'Tudo sincronizado.' : 'Não foi possível sincronizar agora.', nuvem.estado === 'ok' ? '' : 'aviso'); },
+  'sair': () => sairDaConta(),
+  'abrir-sync': () => menuSync(),
+  'sync-fonte': el => sincronizarFonte(el.dataset.fonte),
+  'sync-todos': el => { $$('[data-sync]').forEach(s => { s.value = el.dataset.v; }); },
+  'aplicar-sync': () => aplicarPlano()
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-acao]');
@@ -1415,9 +1827,10 @@ window.addEventListener('hashchange', () => irPara(location.hash.slice(1)));
    INICIALIZAÇÃO
    ========================================================= */
 state = carregar();
-if (!state) { state = dadosIniciais(); salvar(); }
+if (!state) { state = dadosIniciais(); salvarLocal(); }
 aplicarTema();
 irPara(location.hash.slice(1) || 'painel');
+iniciarNuvem(); // na Vercel: login + sincronização; fora dela, nada muda
 if (!armazenamentoOk) setTimeout(() => toast('Este navegador está bloqueando o armazenamento. Use o backup para não perder dados.', 'erro'), 600);
 </script>
 </body>

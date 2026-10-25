@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/steam.js": { "maxDuration": 60 },
+    "api/psn.js": { "maxDuration": 60 }
+  }
+}
