@@ -407,6 +407,32 @@ button.chip{cursor:pointer}
 .celebra-item .medalha{width:30px;height:34px}
 .celebra-item .medalha .ico{width:15px;height:15px}
 
+/* Retrospectiva */
+.retro-capa{display:grid;gap:8px;text-align:center;justify-items:center;padding:22px 16px;border-color:color-mix(in srgb,var(--magenta) 40%,var(--borda));
+  background:radial-gradient(120% 90% at 50% 0%,color-mix(in srgb,var(--magenta) 16%,var(--card)),var(--card) 70%)}
+.retro-anos{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:6px}
+.bloco>h2.retro-titulo{font:700 30px/1.1 var(--fonte-d);text-transform:none;letter-spacing:0;color:var(--txt);margin:0}
+.retro-frase{margin:0;color:var(--txt2);font-style:italic}
+.retro-xp{display:flex;flex-direction:column;align-items:center;margin-top:6px}
+.retro-xp b{font-size:38px;text-shadow:0 0 18px color-mix(in srgb,var(--magenta) 50%,transparent)}
+.retro-xp span{font-size:12.5px;color:var(--txt2)}
+.retro-nums{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:600px){.retro-nums{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.retro-num{background:var(--card2);border-radius:12px;padding:14px 12px;display:grid;gap:2px}
+.retro-num b{font:700 30px/1.1 var(--fonte-d);font-variant-numeric:tabular-nums}
+.retro-num span{font-size:12px;color:var(--txt2)}
+.retro-dests{display:grid;gap:8px}
+.retro-dest{background:var(--card2);border-radius:12px;padding:10px 12px;display:grid;gap:1px}
+.retro-dest small{font:700 11px var(--fonte-d);letter-spacing:.12em;text-transform:uppercase;color:var(--txt2)}
+.retro-dest b{font-size:15px}
+.retro-dest span{font-size:12.5px;color:var(--txt2)}
+.retro-galeria{display:flex;flex-wrap:wrap;gap:8px}
+.retro-fim{display:grid;gap:10px;text-align:center;justify-items:center}
+.retro-chamada{display:grid;gap:3px;text-decoration:none;color:inherit;border-color:color-mix(in srgb,var(--magenta) 45%,var(--borda));background:linear-gradient(135deg,color-mix(in srgb,var(--magenta) 14%,var(--card)),var(--card) 60%)}
+.retro-chamada b{font:700 18px var(--fonte-d)}
+.retro-chamada small{font-size:12.5px;color:var(--txt2)}
+.perfil-info .btn.mini{min-height:38px}
+
 /* Missões e sequência */
 .titulo-linha{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px}
 .titulo-linha h2{font:700 12.5px var(--fonte-d);text-transform:uppercase;letter-spacing:.14em;color:var(--txt2);margin:0}
@@ -824,6 +850,7 @@ const ABAS = {
   livros: { titulo: 'Livros', render: () => renderLivros() },
   missoes: { titulo: 'Missões', render: () => renderMissoes() },
   perfil: { titulo: 'Perfil', render: () => renderPerfil() },
+  retro: { titulo: 'Retrospectiva', render: () => renderRetro() },
   config: { titulo: 'Configurações', render: () => renderConfig() }
 };
 let abaAtual = 'painel';
@@ -1312,6 +1339,7 @@ function renderPainel() {
   $('#conteudo').innerHTML = `<div class="painel-grade">
     ${htmlAvisoBackup()}
     <p class="frase">${esc(fraseIncentivo(platAno, lidosAno))}</p>
+    ${htmlChamadaRetro()}
     ${htmlJogador(jg)}
     ${htmlMissoesHoje(jg)}
     ${htmlChefao(ch, semJ, diasL, comHoras.length, pend.length, horasRest, comPag.length, filaL.length, pagRest)}
@@ -1562,6 +1590,121 @@ function renderMissoes() {
 }
 
 /* =========================================================
+   RETROSPECTIVA DO ANO (#retro, abre pelo Perfil ou pelo Painel em dez/jan)
+   ========================================================= */
+let anoRetro = null;
+const anoRetroPadrao = () => { const d = new Date(); return d.getMonth() === 0 ? d.getFullYear() - 1 : d.getFullYear(); };
+function anosComDados() {
+  const anos = new Set([new Date().getFullYear()]);
+  state.jogos.forEach(j => { if (CONCLUIDO.includes(j.status) && j.conclusao) anos.add(anoDe(j.conclusao)); });
+  state.livros.forEach(l => { if (l.status === 'Lido' && l.fim) anos.add(anoDe(l.fim)); });
+  Object.keys(state.eventos || {}).forEach(d => anos.add(anoDe(d)));
+  return [...anos].filter(Boolean).sort((a, b) => b - a);
+}
+function dadosRetro(ano) {
+  const J = state.jogos, L = state.livros, c = state.config;
+  const plats = J.filter(j => j.status === 'Platinado/100%' && anoDe(j.conclusao) === ano);
+  const zerados = J.filter(j => j.status === 'Zerado' && anoDe(j.conclusao) === ano);
+  const lidos = L.filter(l => l.status === 'Lido' && anoDe(l.fim) === ano);
+  const dias = Object.keys(state.eventos || {}).filter(d => anoDe(d) === ano && diaAtivo(d)).sort();
+  const evAno = dias.map(ev);
+  // Maior sequência dentro do ano (sem escudos, só dias seguidos de verdade)
+  let maior = 0, corr = 0, ant = null;
+  dias.forEach(d => { corr = ant && somaDias(ant, 1) === d ? corr + 1 : 1; maior = Math.max(maior, corr); ant = d; });
+  const porMes = Array(12).fill(0);
+  [...plats, ...zerados].forEach(j => porMes[mesDe(j.conclusao)]++);
+  lidos.forEach(l => porMes[mesDe(l.fim)]++);
+  const melhorMes = porMes.some(Boolean) ? porMes.indexOf(Math.max(...porMes)) : -1;
+  const missoes = Object.values(state.gamer.feitas).filter(m => anoDe(m.data) === ano);
+  const conq = conquistas().filter(q => q.ok && anoDe(q.data) === ano);
+  const xp = plats.reduce((s, j) => s + xpGanhoJogo(j), 0) + zerados.reduce((s, j) => s + xpGanhoJogo(j), 0)
+    + lidos.reduce((s, l) => s + xpLivro(l), 0) + missoes.reduce((s, m) => s + (m.xp || 0), 0)
+    + conq.reduce((s, q) => s + RARIDADES[q.rar][1], 0)
+    + evAno.reduce((s, e) => s + Math.min(60, Math.floor(e.pag / 2)) + Math.min(30, Math.floor(e.horas * 3)), 0);
+  const maxPor = (arr, f) => arr.filter(x => f(x) != null).sort((a, b) => f(b) - f(a))[0] || null;
+  return {
+    plats, zerados, lidos, dias, maior, porMes, melhorMes, missoes, conq, xp,
+    paginas: lidos.reduce((s, l) => s + (l.totalPaginas || 0), 0),
+    pagReg: evAno.reduce((s, e) => s + e.pag, 0), horasReg: Math.round(evAno.reduce((s, e) => s + e.horas, 0) * 10) / 10,
+    desde: dias[0] || '',
+    platDificil: maxPor(plats, j => j.dificuldade), platLonga: maxPor(plats, j => j.horasJogadas || null),
+    livroLongo: maxPor(lidos, l => l.totalPaginas), livroTop: maxPor(lidos, l => l.avaliacao),
+    notaMedia: lidos.filter(l => l.avaliacao).length ? Math.round(lidos.filter(l => l.avaliacao).reduce((s, l) => s + l.avaliacao, 0) / lidos.filter(l => l.avaliacao).length * 10) / 10 : null,
+    metaPlat: c.metaPlatinas, metaLiv: c.metaLivros
+  };
+}
+function fraseRetro(r) {
+  const tot = r.plats.length + r.zerados.length + r.lidos.length;
+  const bateu = (r.metaPlat > 0 && r.plats.length >= r.metaPlat) && (r.metaLiv > 0 && r.lidos.length >= r.metaLiv);
+  if (bateu) return 'Temporada completa: as duas metas batidas. Lendário.';
+  if (tot >= 12) return 'Um ano de muita estrada. O backlog sentiu.';
+  if (tot >= 5) return 'Constância venceu. Cada conclusão contou.';
+  if (tot > 0) return 'Começo de jornada. O próximo ano é seu.';
+  return 'Ainda sem conclusões neste ano — a primeira está logo ali.';
+}
+function renderRetro() {
+  const anos = anosComDados();
+  if (!anoRetro || !anos.includes(anoRetro)) anoRetro = anos.includes(anoRetroPadrao()) ? anoRetroPadrao() : anos[0];
+  const ano = anoRetro, r = dadosRetro(ano);
+  const grande = (v, rot, cor = '') => `<div class="retro-num"><b${cor ? ` style="color:var(--${cor})"` : ''}>${v}</b><span>${rot}</span></div>`;
+  const destaque = (rot, item, extra) => item ? `<div class="retro-dest"><small>${rot}</small><b>${esc(item.nome || item.titulo)}</b><span>${extra}</span></div>` : '';
+  const meta = (rot, feito, alvo, cls) => { const p = alvo > 0 ? Math.min(100, Math.round(feito / alvo * 100)) : 0;
+    return `<div class="meta-anual"><div class="linha"><span>${rot}${alvo > 0 && feito >= alvo ? ' ✓' : ''}</span><b>${feito} / ${alvo}</b></div><span class="barra ${cls}"><i style="width:${p}%"></i></span></div>`; };
+  const capas = [...r.plats.map(j => capaJogo(j, 'mini', 'width:56px;height:76px')), ...r.lidos.map(l => capaLivro(l, 'mini', 'width:56px;height:76px'))];
+  const parcial = r.desde && r.desde > `${ano}-01-01`;
+  $('#conteudo').innerHTML = `<div class="painel-grade retro">
+    <section class="bloco retro-capa largo">
+      <div class="retro-anos">${anos.map(a => `<button class="fchip ${a === ano ? 'ativo' : ''}" data-acao="ano-retro" data-v="${a}">${a}</button>`).join('')}</div>
+      <span class="rot-mag">Retrospectiva</span>
+      <h2 class="retro-titulo">Sua temporada ${ano}</h2>
+      <p class="retro-frase">${esc(fraseRetro(r))}</p>
+      <div class="retro-xp"><b class="xp">+${fmtNum(r.xp)} XP</b><span>ganhos em ${ano}</span></div>
+    </section>
+    <section class="bloco largo"><h2>Em números</h2><div class="retro-nums">
+      ${grande(r.plats.length, 'platinas / 100%', 'roxo')}${grande(r.zerados.length, 'jogos zerados', 'ok')}
+      ${grande(r.lidos.length, 'livros lidos', 'ok')}${grande(fmtNum(r.paginas), 'páginas nos livros lidos')}
+      ${grande(r.dias.length, 'dias ativos', 'ouro')}${grande(r.maior, 'maior sequência (dias)', 'ouro')}
+      ${grande(fmtNum(r.horasReg), 'horas registradas', 'pri')}${grande(r.missoes.length, 'missões concluídas', 'magenta')}
+    </div>${parcial ? `<p class="ajuda" style="margin-top:10px">Dias, horas e missões só existem a partir de ${fmtData(r.desde)}, quando o registro diário começou.</p>` : ''}</section>
+    <section class="bloco"><h2>Metas de ${ano}</h2>
+      ${meta('Platinas / 100%', r.plats.length, r.metaPlat, '')}${meta('Livros lidos', r.lidos.length, r.metaLiv, 'ok')}</section>
+    <section class="bloco"><h2>Destaques</h2><div class="retro-dests">
+      ${destaque('Platina mais difícil', r.platDificil, r.platDificil ? `dificuldade ${r.platDificil.dificuldade}/10` : '')}
+      ${destaque('Platina mais longa', r.platLonga, r.platLonga ? `${fmtNum(r.platLonga.horasJogadas)} h jogadas` : '')}
+      ${destaque('Livro mais longo', r.livroLongo, r.livroLongo ? `${fmtNum(r.livroLongo.totalPaginas)} páginas` : '')}
+      ${destaque('Livro favorito', r.livroTop, r.livroTop ? '★'.repeat(r.livroTop.avaliacao) : '')}
+      ${r.melhorMes >= 0 ? `<div class="retro-dest"><small>Mês mais produtivo</small><b>${MESES[r.melhorMes]}</b><span>${r.porMes[r.melhorMes]} conclusões</span></div>` : ''}
+      ${r.notaMedia != null ? `<div class="retro-dest"><small>Nota média dos livros</small><b>${fmtNum(r.notaMedia)} / 5</b><span>${r.lidos.filter(l => l.avaliacao).length} avaliados</span></div>` : ''}
+      ${!r.platDificil && !r.livroLongo && r.melhorMes < 0 ? '<p class="ajuda">Os destaques aparecem quando você concluir jogos e livros neste ano.</p>' : ''}
+    </div></section>
+    <section class="bloco duplo"><h2>Conclusões por mês</h2>${svgGrafico(ano)}
+      <div class="leg-graf"><span><i style="background:var(--pri)"></i>Jogos</span><span><i style="background:var(--ok)"></i>Livros</span></div></section>
+    ${capas.length ? `<section class="bloco largo"><h2>Galeria da temporada · ${capas.length}</h2><div class="retro-galeria">${capas.join('')}</div></section>` : ''}
+    ${r.conq.length ? `<section class="bloco largo"><h2>Conquistas de ${ano} · ${r.conq.length}</h2><div class="medalhas">${r.conq.map(q => `<div class="medalha-card r-${q.rar}">${medalha(q)}<b>${esc(q.nome)}</b><span class="rar">${RARIDADES[q.rar][0]} · ${fmtData(q.data)}</span></div>`).join('')}</div></section>` : ''}
+    <section class="bloco largo retro-fim">
+      <p class="ajuda">Guarde ou compartilhe o resumo da sua temporada.</p>
+      <div class="acoes-linha" style="margin:0"><button class="btn pri" data-acao="copiar-retro">Copiar resumo</button><button class="btn" data-acao="ir-aba" data-aba-destino="perfil">Voltar ao Perfil</button></div>
+    </section>
+  </div>`;
+}
+function textoRetro() {
+  const r = dadosRetro(anoRetro);
+  return [`Minha temporada ${anoRetro} — Minha Estante`, fraseRetro(r), '',
+    `🏆 ${r.plats.length} platinas / 100%  ·  🎮 ${r.zerados.length} zerados  ·  📚 ${r.lidos.length} livros (${fmtNum(r.paginas)} páginas)`,
+    `🔥 ${r.dias.length} ${r.dias.length === 1 ? 'dia ativo' : 'dias ativos'} · maior sequência: ${r.maior} ${r.maior === 1 ? 'dia' : 'dias'}  ·  ⚡ +${fmtNum(r.xp)} XP`,
+    r.platDificil ? `Platina mais difícil: ${r.platDificil.nome} (${r.platDificil.dificuldade}/10)` : '',
+    r.livroTop ? `Livro favorito: ${r.livroTop.titulo} (${'★'.repeat(r.livroTop.avaliacao)})` : ''].filter((x, i) => x !== '' || i === 2).join('\n');
+}
+// Card no Painel: em dezembro e janeiro, chama para a retrospectiva
+function htmlChamadaRetro() {
+  const m = new Date().getMonth();
+  if (m !== 11 && m !== 0) return '';
+  const ano = anoRetroPadrao();
+  return `<a class="bloco retro-chamada largo" href="#retro" data-acao="abrir-retro" data-v="${ano}">
+    <span class="rot-mag">Fim de temporada</span><b>Sua retrospectiva de ${ano} está pronta</b><small>Platinas, livros, sequência e destaques do ano ›</small></a>`;
+}
+
+/* =========================================================
    ABA PERFIL (nível, títulos e conquistas)
    ========================================================= */
 let filtroConq = '';
@@ -1582,6 +1725,7 @@ function renderPerfil() {
         <p class="ajuda">${prox ? `Próximo título no NV ${prox[0]}: <b>${esc(prox[1])}</b>` : 'Você chegou ao título máximo.'}</p>
         <span class="barra xp"><i style="width:${pct}%"></i></span>
         <span class="legenda"><b>${fmtNum(jg.noNivel)} / ${fmtNum(jg.precisa)} XP</b><span>faltam ${fmtNum(jg.precisa - jg.noNivel)} p/ NV ${jg.nivel + 1}</span></span>
+        <a class="btn mini" href="#retro" data-acao="abrir-retro" data-v="${anoRetroPadrao()}" style="justify-self:start;margin-top:4px">${ico('estrela')}Retrospectiva ${anoRetroPadrao()}</a>
       </div>
     </section>
     <section class="bloco"><h2>De onde vem seu XP</h2>
@@ -2767,6 +2911,13 @@ const ACOES = {
   'fechar-sheet': () => fecharSheet(),
   'fechar-celebra': () => fecharCelebracao(),
   'guia-missao': el => abrirGuiaMissao(el.dataset.chave),
+  'abrir-retro': el => { anoRetro = Number(el.dataset.v) || null; if (abaAtual === 'retro') render(); else location.hash = 'retro'; },
+  'ano-retro': el => { anoRetro = Number(el.dataset.v); render(); },
+  'copiar-retro': async () => {
+    const txt = textoRetro();
+    try { await navigator.clipboard.writeText(txt); toast('Resumo copiado. É só colar onde quiser.'); }
+    catch (e) { abrirSheet('Resumo da temporada', `<textarea readonly rows="9" style="font-size:14px">${esc(txt)}</textarea><p class="ajuda" style="margin-top:8px">Selecione o texto e copie.</p>`); }
+  },
   'ir-aba': el => { fecharSheet(); const a = el.dataset.abaDestino; if (abaAtual === a) window.scrollTo(0, 0); else location.hash = a; },
   'ir-sessao': () => irParaSessao(),
   'trocar-missao': () => {
