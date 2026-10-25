@@ -412,7 +412,20 @@ button.chip{cursor:pointer}
 .titulo-linha h2{font:700 12.5px var(--fonte-d);text-transform:uppercase;letter-spacing:.14em;color:var(--txt2);margin:0}
 .titulo-linha .btn.mini{min-height:36px}
 .lista-missoes{display:grid;gap:8px}
-.missao{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid transparent}
+.missao{display:flex;gap:12px;align-items:center;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid transparent;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:border-color .15s}
+.missao:active{transform:scale(.99)}
+.missao-rodape{display:flex;justify-content:space-between;gap:8px}
+.missao-guia{color:var(--pri)!important;font-weight:600;white-space:nowrap}
+@media (hover:hover){.missao:hover{border-color:color-mix(in srgb,var(--pri) 55%,var(--borda))}}
+.guia{display:grid;gap:10px}
+.guia-topo{display:flex;gap:12px;align-items:center}
+.guia-meta{font-size:13px;color:var(--txt2);margin-top:2px}
+.guia-tit{font:700 12.5px var(--fonte-d);text-transform:uppercase;letter-spacing:.14em;color:var(--txt2);margin-top:6px}
+.guia-passos{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14.5px;line-height:1.45}
+.guia-passos li::marker{color:var(--pri);font-family:var(--fonte-d);font-weight:700}
+.guia-intro{margin:0;font-size:14.5px}
+.guia-dica{display:flex;gap:10px;padding:11px 13px;border-radius:10px;font-size:13.5px;line-height:1.45;background:color-mix(in srgb,var(--pri) 9%,transparent);border:1px solid color-mix(in srgb,var(--pri) 35%,transparent)}
+.guia-dica .ico{color:var(--pri);margin-top:1px}
 .missao.ok{border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
 .missao-ico{flex:none;width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--pri) 14%,transparent);color:var(--pri)}
 .missao.ok .missao-ico{background:var(--ok);color:var(--pri-txt)}
@@ -1376,13 +1389,104 @@ function htmlMissao(m) {
   const ok = missaoOk(m), feita = state.gamer.feitas[m.chave];
   const pct = Math.min(100, Math.round(m.atual / m.alvo * 100));
   const fmtV = v => m.un === 'h' ? fmtNum(v) : fmtNum(Math.round(v));
-  return `<div class="missao${ok ? ' ok' : ''}">
+  return `<button class="missao${ok ? ' ok' : ''}" data-acao="guia-missao" data-chave="${esc(m.chave)}" aria-label="Como completar: ${esc(m.nome)}">
     <span class="missao-ico">${ico(ok ? 'check' : m.icone)}</span>
-    <div class="missao-corpo">
-      <div class="missao-topo"><b>${esc(m.nome)}</b><span class="xp">${ok ? '✓ ' : ''}+${m.xp}</span></div>
+    <span class="missao-corpo">
+      <span class="missao-topo"><b>${esc(m.nome)}</b><span class="xp">${ok ? '✓ ' : ''}+${m.xp}</span></span>
       <span class="barra${ok ? ' ok' : ''}"><i style="width:${pct}%"></i></span>
-      <small>${ok ? `Concluída${feita && feita.data !== hoje() ? ` em ${fmtData(feita.data)}` : ''}` : `${fmtV(m.atual)} / ${fmtV(m.alvo)}${m.un ? ' ' + m.un : ''}`}</small>
-    </div></div>`;
+      <span class="missao-rodape"><small>${ok ? `Concluída${feita && feita.data !== hoje() ? ` em ${fmtData(feita.data)}` : ''}` : `${fmtV(m.atual)} / ${fmtV(m.alvo)}${m.un ? ' ' + m.un : ''}`}</small><small class="missao-guia">Como fazer ›</small></span>
+    </span></button>`;
+}
+
+/* ---------- Guia de cada missão (abre ao tocar nela) ---------- */
+const acharMissao = chave => {
+  const dia = hoje();
+  return [...missoesDoDia(dia), ...missoesDaSemana(segundaDe(dia)), ...missoesTemporada(new Date().getFullYear())].find(m => m.chave === chave);
+};
+// Dicas com os dados reais: o que está mais perto de acabar, o que ler ou jogar
+function dicaLeitura() {
+  const lendo = state.livros.filter(l => l.status === 'Lendo');
+  if (lendo.length) return lendo.map(l => l.totalPaginas
+    ? `Você está lendo “${l.titulo}”: página ${l.paginaAtual || 0} de ${l.totalPaginas}.`
+    : `Você está lendo “${l.titulo}”. Informe o total de páginas para ver o progresso.`).join(' ');
+  const prox = listaOrdem()[0];
+  return prox ? `Nenhum livro em “Lendo”. O próximo da sua ordem é “${prox.titulo}”: mude o status dele para Lendo.` : 'Adicione um livro e mude o status para Lendo.';
+}
+function dicaJogo() {
+  const jog = state.jogos.filter(j => j.status === 'Jogando');
+  return jog.length ? `Em “Jogando”: ${jog.map(j => j.nome).join(', ')}.` : 'Nenhum jogo em “Jogando”. Registrar uma sessão de um jogo “Na fila” já muda ele para Jogando.';
+}
+function dicaConclusao() {
+  const livro = state.livros.filter(l => l.status === 'Lendo' && l.totalPaginas).sort((a, b) => progressoLivro(b) - progressoLivro(a))[0];
+  const jogo = state.jogos.filter(j => j.status === 'Jogando').sort((a, b) => progressoJogo(b) - progressoJogo(a))[0];
+  const p = [];
+  if (livro) p.push(`livro “${livro.titulo}” (${progressoLivro(livro)}%, faltam ${livro.totalPaginas - (livro.paginaAtual || 0)} páginas)`);
+  if (jogo) p.push(`jogo “${jogo.nome}” (${progressoJogo(jogo)}%)`);
+  return p.length ? `Mais perto do fim: ${p.join(' e ')}.` : 'Nada em andamento agora. Comece pelo Próximo alvo ou por um livro curto.';
+}
+function guiaMissao(m) {
+  const falta = Math.max(0, Math.round((m.alvo - m.atual) * 10) / 10);
+  const passosLeitura = ['Abra a aba <b>Livros</b>.', 'No cartão <b>Lendo agora</b>, digite a página onde você parou e toque em <b>Salvar</b>.', 'As páginas novas contam na hora. Pode salvar várias vezes no dia.'];
+  const passosJogo = ['Jogue normalmente.', 'Depois, em <b>Missões → Registrar sessão de jogo</b>, escolha o jogo e as horas.',
+    'Ou sincronize a Steam/PSN (<b>Jogos → Steam / PSN</b>): as horas novas entram sozinhas.', 'Ou edite o jogo e aumente <b>Horas jogadas</b>.'];
+  const passosAtual = ['Salvar a página de um livro.', 'Mudar o status de um jogo ou livro (toque no selo do card).', 'Registrar uma sessão de jogo.', 'Editar as horas jogadas ou a % de troféus de um jogo.'];
+  const botoesLeitura = [['Ir para Livros', 'ir-aba', 'livros']];
+  const botoesJogo = [['Registrar sessão', 'ir-sessao', ''], ...(nuvem.usuario ? [['Sincronizar Steam/PSN', 'abrir-sync', '']] : [])];
+  const ano = new Date().getFullYear(), fimAno = new Date(ano, 11, 31), diasAno = Math.max(0, Math.ceil((fimAno - new Date()) / 864e5));
+  const G = {
+    'diaria:pag': { como: passosLeitura, dica: `${dicaLeitura()} Faltam ${falta} páginas hoje.`, botoes: botoesLeitura },
+    'diaria:pag2': { como: passosLeitura, dica: `${dicaLeitura()} Faltam ${falta} páginas hoje.`, botoes: botoesLeitura },
+    'diaria:horas': { como: passosJogo, dica: `${dicaJogo()} Faltam ${fmtNum(falta)} h hoje.`, botoes: botoesJogo },
+    'diaria:sessao': { como: [...passosJogo.slice(0, 3), 'Qualquer tempo vale: meia hora já completa.'], dica: dicaJogo(), botoes: botoesJogo },
+    'diaria:atual1': { como: ['Faça qualquer uma destas ações:', ...passosAtual], dica: 'O jeito mais rápido: tocar no selo de status de qualquer card e mudar o status, ou salvar a página do livro que você está lendo.', botoes: [['Ir para Livros', 'ir-aba', 'livros'], ['Ir para Jogos', 'ir-aba', 'jogos']] },
+    'diaria:atual3': { como: ['Faça 3 destas ações hoje (podem ser repetidas):', ...passosAtual], dica: `Faltam ${falta}. Cada vez que você salva a página de um livro conta como uma.`, botoes: [['Ir para Livros', 'ir-aba', 'livros'], ['Ir para Jogos', 'ir-aba', 'jogos']] },
+    'diaria:ambos': { como: ['Leia qualquer quantidade de páginas e salve no cartão <b>Lendo agora</b> (aba Livros).', 'Jogue e registre a sessão em <b>Missões → Registrar sessão de jogo</b> (ou sincronize a Steam/PSN).', 'As duas coisas precisam ser no mesmo dia.'],
+      dica: `${ev(hoje()).pag > 0 ? 'Leitura de hoje: feita.' : 'Leitura de hoje: falta.'} ${ev(hoje()).horas > 0 ? 'Jogo de hoje: feito.' : 'Jogo de hoje: falta.'}`, botoes: [['Ir para Livros', 'ir-aba', 'livros'], ['Registrar sessão', 'ir-sessao', '']] },
+    'semanal:pag': { como: [...passosLeitura.slice(0, 2), 'Soma todas as páginas de segunda a domingo.'], dica: `${dicaLeitura()} Faltam ${falta} páginas até domingo (≈ ${Math.ceil(falta / Math.max(1, 7 - ((new Date().getDay() + 6) % 7)))} por dia).`, botoes: botoesLeitura },
+    'semanal:horas': { como: [...passosJogo, 'Soma todas as horas de segunda a domingo.'], dica: `${dicaJogo()} Faltam ${fmtNum(falta)} h até domingo.`, botoes: botoesJogo },
+    'semanal:concl': { como: ['Termine um jogo ou um livro até domingo.', 'Jogo: toque no selo de status e escolha <b>Zerado</b> ou <b>Platinado / 100%</b>.', 'Livro: salve a última página (o app pergunta se terminou) ou mude o status para <b>Lido</b>.'],
+      dica: dicaConclusao(), botoes: [['Ir para Livros', 'ir-aba', 'livros'], ['Ir para Jogos', 'ir-aba', 'jogos']] },
+    'semanal:dias': { como: ['Registre algum progresso em 5 dias diferentes desta semana (de segunda a domingo).', 'Vale qualquer ação: páginas, horas, status ou progresso.', 'Dias cobertos por escudo ou de descanso não contam aqui.'],
+      dica: `Dias ativos nesta semana: ${m.atual}. Faltam ${falta}.`, botoes: [['Ir para Livros', 'ir-aba', 'livros']] },
+    'temporada:plat': { como: ['Platine (PlayStation) ou faça 100% (Steam) em jogos até 31/12.', 'Ao platinar, toque no selo e escolha <b>Platinado / 100%</b>, ou sincronize a Steam/PSN, que marca sozinha.', 'A meta vem de <b>Ajustes → Metas anuais</b>.'],
+      dica: `Faltam ${falta} e restam ${diasAno} dias no ano. ${state.gamer.alvo && acharJogo(state.gamer.alvo) ? `Seu alvo aceito: “${acharJogo(state.gamer.alvo).nome}”.` : 'O Próximo alvo indica qual começar.'}`, botoes: [['Ver Próximo alvo', 'sugerir', ''], ['Ir para Jogos', 'ir-aba', 'jogos']] },
+    'temporada:livros': { como: ['Termine livros até 31/12 (status <b>Lido</b>).', 'Siga a sua ordem de leitura na aba Livros.', 'A meta vem de <b>Ajustes → Metas anuais</b>.'],
+      dica: `Faltam ${falta} e restam ${diasAno} dias no ano. ${dicaLeitura()}`, botoes: botoesLeitura },
+    'temporada:chefao': { como: ['A vida do chefão é a soma das horas que faltam nos seus jogos e das páginas que faltam nos seus livros (30 páginas = 1 HP).', 'Cada hora jogada e cada página lida tiram vida. Concluir um item tira o resto dele.', 'Adicionar jogos ou livros novos “cura” o chefão.'],
+      dica: `Hoje ele está ${chefao().pct}% derrotado. Jogos curtos e livros que você já começou são o caminho mais rápido.`, botoes: [['Ver Próximo alvo', 'sugerir', '']] },
+    'temporada:denso': { como: ['Termine pelo menos 1 livro de dificuldade <b>Densa</b> em cada trimestre: jan–mar, abr–jun, jul–set e out–dez.', 'A dificuldade do livro fica em <b>Editar livro</b>.'],
+      dica: (() => { const lidos = state.livros.filter(l => l.status === 'Lido' && l.dificuldade === 'Densa' && anoDe(l.fim) === ano); const q = new Set(lidos.map(l => Math.floor(mesDe(l.fim) / 3)));
+        const prox = listaOrdem().find(l => l.dificuldade === 'Densa');
+        return `Trimestres feitos: ${['1º', '2º', '3º', '4º'].map((t, i) => `${t} ${q.has(i) ? '✓' : '—'}`).join(' · ')}.${prox ? ` Próximo denso da sua ordem: “${prox.titulo}”.` : ''}`; })(), botoes: botoesLeitura },
+    'temporada:plat6': { como: ['Platine (ou faça 100%) um jogo com dificuldade 6 ou mais neste ano.', 'A dificuldade fica em <b>Editar jogo</b>. Se ela ainda é estimativa, confira num guia de troféus.'],
+      dica: (() => { const c = state.jogos.filter(j => ['Jogando', 'Na fila'].includes(j.status) && (j.dificuldade || 0) >= 6).sort((a, b) => progressoJogo(b) - progressoJogo(a) || (a.horasEstimadas || 999) - (b.horasEstimadas || 999)).slice(0, 2);
+        return c.length ? `Candidatos: ${c.map(j => `“${j.nome}” (dif. ${j.dificuldade}${j.horasEstimadas ? `, ~${j.horasEstimadas} h` : ''})`).join(' e ')}.` : 'Nenhum jogo de dificuldade 6+ na fila.'; })(), botoes: [['Ir para Jogos', 'ir-aba', 'jogos']] }
+  };
+  return G[`${m.freq}:${m.id}`] || { como: ['Siga o que a missão pede.'], dica: '', botoes: [] };
+}
+function abrirGuiaMissao(chave) {
+  const m = acharMissao(chave);
+  if (!m) { toast('Essa missão já terminou.', 'aviso'); return; }
+  const g = guiaMissao(m), ok = missaoOk(m);
+  const prazo = m.freq === 'diaria' ? 'Hoje, até meia-noite' : m.freq === 'semanal' ? `Até domingo, ${fmtData(somaDias(segundaDe(hoje()), 6))}` : `Até 31/12/${new Date().getFullYear()}`;
+  const tipo = { diaria: 'Missão diária', semanal: 'Missão semanal', temporada: 'Missão da temporada' }[m.freq];
+  const pct = Math.min(100, Math.round(m.atual / m.alvo * 100)), fmtV = v => m.un === 'h' ? fmtNum(v) : fmtNum(Math.round(v));
+  abrirSheet(m.nome, `<div class="guia">
+    <div class="guia-topo"><span class="missao-ico">${ico(ok ? 'check' : m.icone)}</span>
+      <div><span class="rot-mag">${tipo}</span><div class="guia-meta">${prazo} · <b class="xp">+${m.xp} XP</b></div></div></div>
+    <span class="barra${ok ? ' ok' : ''}"><i style="width:${pct}%"></i></span>
+    <div class="legenda"><span>${ok ? 'Concluída!' : `${fmtV(m.atual)} / ${fmtV(m.alvo)}${m.un ? ' ' + m.un : ''}`}</span><span>${pct}%</span></div>
+    <h3 class="guia-tit">Como completar</h3>
+    ${g.como[0].endsWith(':') ? `<p class="guia-intro">${g.como[0]}</p><ul class="guia-passos">${g.como.slice(1).map(p => `<li>${p}</li>`).join('')}</ul>`
+      : `<ol class="guia-passos">${g.como.map(p => `<li>${p}</li>`).join('')}</ol>`}
+    ${g.dica && !ok ? `<div class="guia-dica">${ico('raio')}<span>${esc(g.dica)}</span></div>` : ''}
+    ${!ok && g.botoes.length ? `<div class="acoes-linha" style="margin:4px 0 0">${g.botoes.map(([rot, acao, aba], i) => `<button class="btn ${i === 0 ? 'pri' : ''}" data-acao="${acao}"${aba ? ` data-aba-destino="${aba}"` : ''}>${rot}</button>`).join('')}</div>` : ''}
+  </div>`);
+}
+function irParaSessao() {
+  fecharSheet();
+  const focar = () => { const c = $('#sessaoHoras'); if (c) { c.scrollIntoView({ block: 'center', behavior: 'smooth' }); setTimeout(() => c.focus(), 300); } };
+  if (abaAtual === 'missoes') focar(); else { location.hash = 'missoes'; setTimeout(focar, 120); }
 }
 const DIA_CURTO = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 function htmlDiasSequencia(seq) {
@@ -2662,6 +2766,9 @@ function aplicarPlano() {
 const ACOES = {
   'fechar-sheet': () => fecharSheet(),
   'fechar-celebra': () => fecharCelebracao(),
+  'guia-missao': el => abrirGuiaMissao(el.dataset.chave),
+  'ir-aba': el => { fecharSheet(); const a = el.dataset.abaDestino; if (abaAtual === a) window.scrollTo(0, 0); else location.hash = a; },
+  'ir-sessao': () => irParaSessao(),
   'trocar-missao': () => {
     if (state.gamer.troca === hoje()) { toast('Você já trocou uma missão hoje.', 'aviso'); return; }
     state.gamer.troca = hoje(); salvar(); render(); toast('Missão trocada.');
