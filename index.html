@@ -135,6 +135,11 @@ input[type=checkbox]{width:20px;height:20px;min-height:0;accent-color:var(--pri)
 .capa-PS4{background:linear-gradient(160deg,#3b7cf0,#14358a)}
 .capa-PS5{background:linear-gradient(160deg,#fbfbfd,#b8bdc8);color:#1b1f27}
 .capa-Steam{background:linear-gradient(160deg,#2a475e,#121821);color:#c7d5e0}
+.capa-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.capa.com-img{justify-content:flex-end}
+.capa.com-img .ini{display:none}
+.capa.com-img .plat{position:relative;align-self:flex-start;background:rgba(0,0,0,.62);color:#fff;border-radius:5px;padding:1px 5px;font-size:9.5px;opacity:1}
+.capa.mini.com-img .plat{display:none}
 .card-corpo{min-width:0}
 .card-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
 .card h3{font-size:15.5px;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -367,7 +372,8 @@ const jogoPadrao = () => ({
   id: uid(), nome: '', plataforma: 'PS4', status: 'Na fila', meta: 'Platinar', dificuldade: null,
   horasEstimadas: null, horasJogadas: 0, progresso: 0, prioridade: 'Média', online: ONLINE[0],
   inicio: '', conclusao: '', notas: '', estDif: false, estHoras: false, grupo: null, versaoEscolhida: false,
-  steamAppId: null, psnId: null // preenchidos pela sincronização
+  steamAppId: null, psnId: null, // preenchidos pela sincronização
+  imagem: '' // capa vinda da PSN (a da Steam é montada pelo steamAppId)
 });
 const livroPadrao = () => ({
   id: uid(), titulo: '', autor: '', categoria: 'Filosofia', dificuldade: 'Média', status: 'Na fila', formato: 'Físico',
@@ -656,10 +662,35 @@ function svgGrafico(ano) {
   return `<svg class="grafico" viewBox="0 0 ${W} ${H}" role="img" aria-label="Conclusões por mês em ${ano}">${s}</svg>`;
 }
 const numBox = (v, rot, cls, filtro) => `<button class="num ${cls}" data-acao="ir-filtro" data-filtro='${esc(JSON.stringify(filtro))}'><b>${v}</b><span>${rot}</span></button>`;
+// Capa do jogo: imagem da PSN ou da Steam; se nenhuma carregar, fica o quadro colorido com as iniciais
+function urlsCapa(j) {
+  const u = [];
+  if (j.imagem) u.push(j.imagem);
+  if (j.steamAppId) {
+    const base = `https://cdn.cloudflare.steamstatic.com/steam/apps/${encodeURIComponent(j.steamAppId)}/`;
+    u.push(base + 'library_600x900.jpg', base + 'header.jpg');
+  }
+  return u;
+}
+function capaJogo(j, extra = '', estilo = '') {
+  const u = urlsCapa(j);
+  const img = u.length ? `<img class="capa-img" src="${esc(u[0])}" data-alt="${esc(u.slice(1).join(' '))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
+  const mini = extra.includes('mini');
+  return `<${mini ? 'span' : 'div'} class="capa ${extra} capa-${j.plataforma}${img ? ' com-img' : ''}"${estilo ? ` style="${estilo}"` : ''}>${img}<span class="plat">${j.plataforma}</span>${mini ? '' : `<span class="ini">${esc(iniciais(j.nome))}</span>`}</${mini ? 'span' : 'div'}>`;
+}
+// Imagem que falhou: tenta a próxima opção; sem opções, volta para as iniciais
+document.addEventListener('error', e => {
+  const img = e.target;
+  if (!(img instanceof HTMLImageElement) || !img.classList.contains('capa-img')) return;
+  const resto = (img.dataset.alt || '').split(' ').filter(Boolean);
+  if (resto.length) { img.dataset.alt = resto.slice(1).join(' '); img.src = resto[0]; return; }
+  const capa = img.parentElement; img.remove();
+  if (capa) capa.classList.remove('com-img');
+}, true);
 function miniJogo(j) {
   const p = progressoJogo(j), temBarra = j.meta !== 'Só zerar' || j.horasEstimadas;
   return `<button class="mini-card" data-acao="editar-jogo" data-id="${j.id}">
-    <span class="capa mini capa-${j.plataforma}">${j.plataforma}</span>
+    ${capaJogo(j, 'mini')}
     <span class="mini-info"><strong>${esc(j.nome)}</strong>${temBarra ? `<span class="barra"><i style="width:${p}%"></i></span>` : ''}<small>${legendaJogo(j)}</small></span></button>`;
 }
 function miniLivro(l) {
@@ -795,7 +826,7 @@ function cardJogo(j) {
   const est = '<span class="est">estimativa</span>';
   const metaTxt = j.meta === 'Platinar' ? '🏆 Platinar' : j.meta === '100% conquistas' ? '🏆 100%' : '🏁 Só zerar';
   return `<article class="card" data-acao="editar-jogo" data-id="${j.id}">
-    <div class="capa capa-${j.plataforma}"><span class="plat">${j.plataforma}</span><span class="ini">${esc(iniciais(j.nome))}</span></div>
+    ${capaJogo(j)}
     <div class="card-corpo">
       <div class="card-topo"><h3>${esc(j.nome)}</h3>
         <button class="selo ${STATUS_CLASSE[j.status]}" data-acao="status-jogo" data-id="${j.id}" aria-label="Mudar status">${esc(j.status)} ▾</button></div>
@@ -938,7 +969,7 @@ function menuVersao(grupo) {
   const g = state.jogos.filter(j => j.grupo === grupo);
   abrirSheet('Qual versão vai platinar?', `<p class="ajuda" style="margin-bottom:12px">Mesmo jogo em versões diferentes. Escolha onde vai buscar a platina.</p>
     <div class="menu-opcoes">${g.map(j => `<button class="opcao ${j.versaoEscolhida ? 'atual' : ''}" data-acao="set-versao" data-id="${j.id}">
-      <span class="capa mini capa-${j.plataforma}" style="width:38px;height:38px">${j.plataforma}</span>
+      ${capaJogo(j, 'mini', 'width:38px;height:38px')}
       <span>${esc(j.nome)}<br><small class="ajuda">${j.dificuldade != null ? `Dif. ${j.dificuldade}/10 · ` : ''}${j.horasEstimadas != null ? `~${j.horasEstimadas} h` : ''}</small></span></button>`).join('')}</div>`);
 }
 
@@ -977,7 +1008,7 @@ function mostrarSugestao() {
   if (j.online === ONLINE[1]) motivo += ' Atenção: tem troféus online — confira se os servidores estão ativos.';
   const total = sugestao.lista.length, pos = sugestao.idx % total + 1;
   abrirSheet('Próximo jogo', `
-    <div class="sugestao"><div class="capa capa-${j.plataforma}"><span class="plat">${j.plataforma}</span><span class="ini">${esc(iniciais(j.nome))}</span></div>
+    <div class="sugestao">${capaJogo(j)}
       <div><h3 style="font-size:17px">${esc(j.nome)}</h3><div class="info" style="margin-top:6px">
         ${d != null ? `<span>Dif. ${d}/10</span>` : ''}${j.horasEstimadas != null ? `<span>~${j.horasEstimadas} h</span>` : ''}<span class="prio-${j.prioridade}">${j.prioridade}</span></div></div></div>
     <p class="motivo">${esc(motivo)}</p>
@@ -1697,6 +1728,7 @@ function mostrarPlano(fonte, resp) {
 // Copia os dados vindos da Steam/PSN para um jogo. Retorna true se ele foi concluído agora.
 function aplicarDadosSync(j, it, campo) {
   j[campo] = it.chave;
+  if (it.imagem) j.imagem = it.imagem;
   if (it.horas != null) j.horasJogadas = it.horas;
   if (it.progresso != null) j.progresso = Math.max(0, Math.min(100, Math.round(it.progresso)));
   if (it.inicio && !j.inicio && j.status !== 'Na fila') j.inicio = it.inicio;

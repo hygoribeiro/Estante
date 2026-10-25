@@ -58,7 +58,8 @@ export default async function handler(req, res) {
           const atual = horas.get(chave);
           horas.set(chave, {
             horas: (atual ? atual.horas : 0) + (h || 0),
-            inicio: String(t.firstPlayedDateTime || '').slice(0, 10)
+            inicio: String(t.firstPlayedDateTime || '').slice(0, 10),
+            imagem: (atual && atual.imagem) || t.imageUrl || ''
           });
         }
         if (!lote.length || r.nextOffset == null) break;
@@ -85,7 +86,9 @@ export default async function handler(req, res) {
         concluido100: concluido,
         conclusao: concluido && t.lastUpdatedDateTime ? String(t.lastUpdatedDateTime).slice(0, 10) : '',
         horas: h ? Math.round(h.horas * 10) / 10 : null,
-        inicio: h ? h.inicio : ''
+        inicio: h ? h.inicio : '',
+        // Capa: arte do jogo (lista de jogados) ou, na falta, o ícone dos troféus
+        imagem: (h && h.imagem) || t.trophyTitleIconUrl || ''
       });
     }
     if (ignorados) avisos.push(`${ignorados} jogo(s) de PS3/PS Vita ficaram de fora (o app organiza só PS4, PS5 e Steam).`);
