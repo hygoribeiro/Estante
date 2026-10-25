@@ -2344,8 +2344,8 @@ function renderConfig() {
       <button class="btn perigo cheio" data-acao="apagar-tudo">Apagar tudo</button>
     </section>
     <p class="ajuda" style="text-align:center;margin:8px 0">${state.jogos.length} jogos · ${state.livros.length} livros${armazenamentoOk ? '' : ' · ⚠ armazenamento bloqueado neste navegador'}</p></div>`;
-  $('[data-config-txt]').forEach(s => s.addEventListener('change', () => { c[s.dataset.configTxt] = s.value; salvar(); toast('Configuração salva.'); }));
-  $('[data-config]').forEach(inp => inp.addEventListener('change', () => {
+  $$('[data-config-txt]').forEach(s => s.addEventListener('change', () => { c[s.dataset.configTxt] = s.value; salvar(); toast('Configuração salva.'); }));
+  $$('[data-config]').forEach(inp => inp.addEventListener('change', () => {
     const v = num(inp.value), k = inp.dataset.config;
     if (v == null || v < Number(inp.min)) { inp.value = c[k]; toast('Valor inválido.', 'erro'); return; }
     c[k] = Math.min(Number(inp.max), v); inp.value = c[k];
