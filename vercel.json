@@ -1,6 +1,19 @@
 {
   "functions": {
-    "api/steam.js": { "maxDuration": 60 },
-    "api/psn.js": { "maxDuration": 60 }
-  }
+    "api/steam.js": {
+      "maxDuration": 60
+    },
+    "api/psn.js": {
+      "maxDuration": 60
+    },
+    "api/lembrete.js": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/lembrete",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

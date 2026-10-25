@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Minha Estante: jogos (PS4, PS5, Steam) e livros, com Supabase e Vercel",
   "dependencies": {
-    "psn-api": "^2.18.0"
+    "psn-api": "^2.18.0",
+    "web-push": "^3.6.7"
   },
   "engines": {
     "node": ">=18"

@@ -16,6 +16,8 @@ App pessoal para organizar jogos (PS4, PS5, Steam) e livros. Funciona no celular
 | `api/_comum.js` | Confere o login antes de liberar Steam/PSN |
 | `supabase.sql` | Cria a tabela e as regras de segurança no Supabase |
 | `vercel.json`, `package.json` | Configuração da Vercel |
+| `api/lembrete.js` | Lembrete diário por notificação (rodado pelo cron da Vercel às 21h) |
+| `sw.js`, `manifest.webmanifest`, `icones/` | App instalável (tela inicial), abre offline e recebe notificações |
 
 ## Instalação (uma vez)
 
@@ -55,6 +57,16 @@ App pessoal para organizar jogos (PS4, PS5, Steam) e livros. Funciona no celular
 1. Abra o link da Vercel e entre com o e-mail e a senha do passo 1.3.
 2. Se você já tem dados no app antigo: lá, **Ajustes → Exportar backup**; no novo, **Ajustes → Importar backup**.
 3. **Jogos → 🔄 Steam / PSN**: revise o que vai mudar e toque em **Aplicar**.
+
+## Lembrete diário (opcional)
+Por volta das 21h (horário de Brasília), se você não registrou nada no dia, chega uma notificação de que a sequência está em risco.
+
+1. **Supabase → SQL Editor**: rode de novo o `supabase.sql` inteiro (ele cria a tabela `lembretes` e não mexe nos seus dados).
+2. **Vercel → Settings → Environment Variables**: adicione `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CRON_SECRET` e `SUPABASE_SERVICE_ROLE_KEY` (esta última em Supabase → Project Settings → API → `service_role`; é secreta, nunca coloque no app). Para gerar as chaves VAPID: `npx web-push generate-vapid-keys`. `CRON_SECRET` é qualquer texto longo e aleatório.
+3. **Deployments → ⋯ → Redeploy**.
+4. No app: **Ajustes → Lembrete diário → Ativar neste aparelho** e depois **Enviar notificação de teste**.
+
+No Android, funciona no Chrome (melhor ainda com o app instalado: menu ⋮ → Instalar app). No iPhone (iOS 16.4+), primeiro adicione o app à Tela de Início e ative por lá. O plano gratuito da Vercel roda o cron uma vez por dia, em algum momento dentro da hora marcada.
 
 ## Renovar o token da PSN (a cada ~2 meses)
 Quando a sincronização da PSN avisar que o NPSSO expirou: gere um novo (passo 3), troque `PSN_NPSSO` na Vercel e faça **Redeploy**.

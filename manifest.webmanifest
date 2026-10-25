@@ -1,0 +1,17 @@
+{
+  "name": "Minha Estante",
+  "short_name": "Estante",
+  "description": "Jogos e livros, com missões, XP e conquistas.",
+  "lang": "pt-BR",
+  "start_url": "./#painel",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#07080f",
+  "theme_color": "#07080f",
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

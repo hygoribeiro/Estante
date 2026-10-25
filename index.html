@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-title" content="Estante">
 <title>Minha Estante — Jogos e Livros</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2322e4ff'/%3E%3Cpath d='M16 14h10v36H16zM29 14h8v36h-8zM40 17l7-2 8 33-7 2z' fill='%2307080f'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icones/icone-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
@@ -1590,6 +1592,62 @@ function renderMissoes() {
 }
 
 /* =========================================================
+   APP INSTALÁVEL E LEMBRETE DIÁRIO (notificação às 21h, enviada por /api/lembrete)
+   ========================================================= */
+let lembreteAqui = null; // assinatura de notificação deste aparelho (null = não ativado)
+const suportaPush = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+async function registrarSW() {
+  if (!('serviceWorker' in navigator) || !(location.protocol === 'https:' || location.hostname === 'localhost')) return;
+  try {
+    const reg = await navigator.serviceWorker.register('sw.js');
+    if (reg.pushManager) lembreteAqui = await reg.pushManager.getSubscription();
+    if (abaAtual === 'config') atualizarBlocoLembrete();
+  } catch (e) { console.warn('Service worker não registrado', e); }
+}
+function htmlLembrete() {
+  const ok = txt => `<p class="ajuda">${txt}</p>`;
+  if (!nuvem.ativo) return ok('Disponível na versão hospedada na Vercel, com login.');
+  if (!nuvem.usuario) return ok('Entre na sua conta para ativar o lembrete.');
+  if (!nuvem.lembrete || !nuvem.lembrete.ativo) return ok('Ainda não configurado no servidor: faltam as chaves do lembrete na Vercel (veja o README, seção “Lembrete diário”).');
+  if (!suportaPush()) return ok('Este navegador não aceita notificações de apps. No iPhone, primeiro adicione o app à Tela de Início (Compartilhar → Adicionar à Tela de Início) e abra por lá.');
+  if (Notification.permission === 'denied') return ok('As notificações estão bloqueadas para este site. Libere nas configurações do navegador (cadeado na barra de endereço → Notificações) e volte aqui.');
+  return `<p class="ajuda" style="margin-bottom:12px">Por volta das 21h, se você ainda não registrou nada no dia, chega um aviso de que a sequência está em risco. Nos dias com registro (ou no seu dia de descanso), nada chega.</p>
+    <div class="cfg-linha"><span>Neste aparelho<small>${lembreteAqui ? 'Ativado' : 'Desativado'}</small></span>
+      ${lembreteAqui ? '<button class="btn mini" data-acao="lembrete-desligar">Desativar</button>' : '<button class="btn mini pri" data-acao="lembrete-ligar">Ativar neste aparelho</button>'}</div>
+    ${lembreteAqui ? '<button class="btn cheio" data-acao="lembrete-testar" style="margin-top:8px">Enviar notificação de teste</button>' : ''}`;
+}
+function atualizarBlocoLembrete() { const b = $('#blocoLembrete'); if (b) b.innerHTML = `<h2>Lembrete diário</h2>${htmlLembrete()}`; }
+// Converte a chave pública VAPID (base64url) para o formato que o navegador pede
+const chaveVapid = b64 => { const s = (b64 + '='.repeat((4 - b64.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/'); return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+async function ligarLembrete() {
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { toast('Sem permissão para notificações.', 'aviso'); atualizarBlocoLembrete(); return; }
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: chaveVapid(nuvem.lembrete.chave) });
+    const { error } = await nuvem.cli.from('lembretes').upsert({ endpoint: sub.endpoint, user_id: nuvem.usuario.id, assinatura: sub.toJSON() });
+    if (error) throw error;
+    lembreteAqui = sub; atualizarBlocoLembrete(); toast('Lembrete ativado neste aparelho.');
+  } catch (e) { console.warn(e); toast('Não foi possível ativar o lembrete. Confira se a tabela “lembretes” foi criada no Supabase.', 'erro'); }
+}
+async function desligarLembrete() {
+  try {
+    const sub = lembreteAqui;
+    if (sub) { await nuvem.cli.from('lembretes').delete().eq('endpoint', sub.endpoint); await sub.unsubscribe(); }
+    lembreteAqui = null; atualizarBlocoLembrete(); toast('Lembrete desativado neste aparelho.');
+  } catch (e) { toast('Não foi possível desativar agora. Tente de novo.', 'erro'); }
+}
+async function testarLembrete() {
+  try {
+    const { data } = await nuvem.cli.auth.getSession(), token = data && data.session && data.session.access_token;
+    const r = await fetch('api/lembrete?teste=1', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.erro || 'Falha no envio.');
+    toast(d.enviadas ? 'Notificação enviada. Deve chegar em instantes.' : 'Nenhuma notificação enviada.', d.enviadas ? '' : 'aviso');
+  } catch (e) { toast(e.message, 'erro'); }
+}
+
+/* =========================================================
    RETROSPECTIVA DO ANO (#retro, abre pelo Perfil ou pelo Painel em dez/jan)
    ========================================================= */
 let anoRetro = null;
@@ -2464,6 +2522,7 @@ function renderConfig() {
       ${linha('metaPlatinas', 'Platinas / 100% por ano', '', 0, 200)}
       ${linha('metaLivros', 'Livros por ano', '', 0, 365)}
     </section>
+    <section class="bloco" id="blocoLembrete"><h2>Lembrete diário</h2>${htmlLembrete()}</section>
     <section class="bloco"><h2>Modo jogador</h2>
       <label class="cfg-linha"><span>Dia de descanso<small>Não quebra nem conta na sequência</small></span>
         <select data-config-txt="descanso" style="width:140px">${opcoes([['', 'Nenhum'], ['dom', 'Domingo'], ['sab', 'Sábado'], ['seg', 'Segunda']], c.descanso || '')}</select></label>
@@ -2599,6 +2658,7 @@ async function iniciarNuvem() {
   nuvem.cli = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
   nuvem.ativo = true;
   nuvem.integracoes = cfg.integracoes || {};
+  nuvem.lembrete = cfg.lembrete || null;
   let sessao = null;
   try { const { data } = await nuvem.cli.auth.getSession(); sessao = data && data.session; } catch (e) { /* ignora */ }
   if (sessao) { nuvem.usuario = sessao.user; await sincronizar(true); }
@@ -2911,6 +2971,9 @@ const ACOES = {
   'fechar-sheet': () => fecharSheet(),
   'fechar-celebra': () => fecharCelebracao(),
   'guia-missao': el => abrirGuiaMissao(el.dataset.chave),
+  'lembrete-ligar': () => ligarLembrete(),
+  'lembrete-desligar': () => desligarLembrete(),
+  'lembrete-testar': () => testarLembrete(),
   'abrir-retro': el => { anoRetro = Number(el.dataset.v) || null; if (abaAtual === 'retro') render(); else location.hash = 'retro'; },
   'ano-retro': el => { anoRetro = Number(el.dataset.v); render(); },
   'copiar-retro': async () => {
@@ -3035,6 +3098,7 @@ state = carregar();
 if (!state) { state = dadosIniciais(); salvarLocal(); }
 aplicarTema();
 irPara(location.hash.slice(1) || 'painel');
+registrarSW(); // app instalável, abre offline e recebe o lembrete
 iniciarNuvem() // na Vercel: login + sincronização; fora dela, nada muda
   .finally(() => { capasLiberadas = true; buscarCapasLivros(); });
 if (!armazenamentoOk) setTimeout(() => toast('Este navegador está bloqueando o armazenamento. Use o backup para não perder dados.', 'erro'), 600);

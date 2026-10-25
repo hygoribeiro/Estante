@@ -8,6 +8,11 @@ export default function handler(req, res) {
     integracoes: {
       steam: !!(process.env.STEAM_API_KEY && process.env.STEAM_ID),
       psn: !!process.env.PSN_NPSSO
+    },
+    // Lembrete diário: a chave pública VAPID também é pública por natureza
+    lembrete: {
+      ativo: !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.CRON_SECRET),
+      chave: process.env.VAPID_PUBLIC_KEY || ''
     }
   });
 }
