@@ -16,7 +16,8 @@ App pessoal para organizar jogos (PS4, PS5, Steam) e livros. Funciona no celular
 | `api/_comum.js` | Confere o login antes de liberar Steam/PSN |
 | `supabase.sql` | Cria a tabela e as regras de segurança no Supabase |
 | `vercel.json`, `package.json` | Configuração da Vercel |
-| `api/lembrete.js` | Lembrete diário por notificação (rodado pelo cron da Vercel às 21h) |
+| `api/lembrete.js` | Tarefas diárias do cron da Vercel (21h): backup semanal, lembrete e alerta de preço |
+| `api/precos.js`, `api/_precos.js` | Busca jogos e preços (em reais) na loja da Steam para a lista de desejos |
 | `sw.js`, `manifest.webmanifest`, `icones/` | App instalável (tela inicial), abre offline e recebe notificações |
 
 ## Instalação (uma vez)
@@ -67,6 +68,12 @@ Por volta das 21h (horário de Brasília), se você não registrou nada no dia, 
 4. No app: **Ajustes → Lembrete diário → Ativar neste aparelho** e depois **Enviar notificação de teste**.
 
 No Android, funciona no Chrome (melhor ainda com o app instalado: menu ⋮ → Instalar app). No iPhone (iOS 16.4+), primeiro adicione o app à Tela de Início e ative por lá. O plano gratuito da Vercel roda o cron uma vez por dia, em algum momento dentro da hora marcada.
+
+## Lista de desejos e cópias automáticas
+- **Jogos → Desejos**: jogos que você ainda não tem. Busque pelo nome na Steam para o preço (em reais) vir sozinho; para PlayStation, anote o preço e o link da loja.
+- Com o lembrete diário ativado, chega um aviso no celular quando um jogo da Steam chega no seu **preço alvo** (ou com 50%+ de desconto, se não houver alvo). O mesmo preço não é avisado duas vezes.
+- **Ajustes → Cópias automáticas na nuvem**: toda semana o servidor guarda uma cópia completa da estante (ficam as 8 mais recentes). Dá para fazer uma na hora e restaurar qualquer uma (antes de restaurar, o app guarda uma cópia do estado atual).
+- Para funcionar, rode no Supabase o trecho **"Backups automáticos e alertas de preço"** do `supabase.sql` (uma vez). Não precisa de variável nova na Vercel.
 
 ## Renovar o token da PSN (a cada ~2 meses)
 Quando a sincronização da PSN avisar que o NPSSO expirou: gere um novo (passo 3), troque `PSN_NPSSO` na Vercel e faça **Redeploy**.
