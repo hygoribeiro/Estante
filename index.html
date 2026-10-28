@@ -546,6 +546,29 @@ a.icone-btn{color:var(--txt)}
   .ordem,#areaLivros>.ajuda{max-width:820px}
 }
 
+/* Lista de desejos */
+.preco-grande{flex:none;font-family:var(--fonte-d);font-weight:800;font-size:17px;white-space:nowrap;color:var(--txt)}
+.sem-preco{font-family:inherit;font-size:12px;font-weight:600;color:var(--txt3)}
+.card.no-alvo{border-color:color-mix(in srgb,var(--ok) 60%,var(--borda));box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 22%,transparent)}
+.card.no-alvo .preco-grande{color:var(--ok)}
+.riscado{text-decoration:line-through;color:var(--txt3)}
+.chip.promo{color:var(--magenta);border-color:color-mix(in srgb,var(--magenta) 45%,var(--borda))}
+.barra.alvo i{background:linear-gradient(90deg,var(--ouro),var(--ok))}
+.link-loja{color:var(--pri);font-weight:650;text-decoration:none;white-space:nowrap}
+.link-loja:hover{text-decoration:underline}
+.alerta.ok-alerta{border-color:color-mix(in srgb,var(--ok) 55%,var(--borda));background:color-mix(in srgb,var(--ok) 10%,var(--card));color:var(--txt)}
+.resultados-steam{display:grid;gap:6px;margin-top:8px;max-height:320px;overflow:auto}
+.resultados-steam:empty{display:none}
+.resultados-steam .opcao{min-height:58px;padding:6px 10px}
+.resultados-steam img{width:34px;height:46px;object-fit:cover;border-radius:6px;flex:none;background:var(--card2)}
+.resultados-steam small{display:block;color:var(--txt2);font-size:12px;font-weight:500}
+
+/* Telas bem largas (1600 px ou mais): aproveita o espaço com até 3 colunas de cards */
+@media (min-width:1600px){
+  main{max-width:1520px}
+  .topo-int{max-width:1456px}
+}
+
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -661,8 +684,14 @@ const livroPadrao = () => ({
   totalPaginas: null, paginaAtual: 0, ordem: 0, semPosicao: false, inicio: '', fim: '', avaliacao: null, notas: '',
   capa: '', capaBuscada: false // capa achada no Google Books / Open Library
 });
-const integracoesPadrao = () => ({ steam: null, psn: null, ignorados: { steam: [], psn: [] } });
-const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null, integracoes: integracoesPadrao(), eventos: {}, gamer: gamerPadrao() });
+// Lista de desejos: jogos que ainda não tenho. Na Steam o preço vem sozinho; no PlayStation é anotado à mão.
+const desejoPadrao = () => ({
+  id: uid(), nome: '', plataforma: 'Steam', steamAppId: null, imagem: '', link: '',
+  precoAlvo: null, preco: null, menorPreco: null, notas: '', criado: hoje()
+  // preco = { atual, original, desconto, em } · menorPreco = menor preço já visto
+});
+const integracoesPadrao = () => ({ steam: null, psn: null, ignorados: { steam: [], psn: [] }, precos: null });
+const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null, integracoes: integracoesPadrao(), eventos: {}, gamer: gamerPadrao(), desejos: [] });
 
 /* =========================================================
    DADOS INICIAIS
@@ -777,6 +806,7 @@ function migrar(d) {
   st.eventos = d.eventos && typeof d.eventos === 'object' ? d.eventos : {};
   st.gamer = Object.assign(gamerPadrao(), d.gamer || {});
   st.gamer.feitas = Object.assign({}, st.gamer.feitas || {});
+  st.desejos = (Array.isArray(d.desejos) ? d.desejos : []).map(x => Object.assign(desejoPadrao(), x));
   delete st.app; delete st.exportadoEm;
   return st;
 }
@@ -857,6 +887,7 @@ const ABAS = {
 };
 let abaAtual = 'painel';
 function irPara(aba) {
+  if (aba === 'desejos') { filtroJ.vista = 'desejos'; aba = 'jogos'; } // link da notificação de preço
   if (!ABAS[aba]) aba = 'painel';
   abaAtual = aba;
   $('#tituloAba').textContent = ABAS[aba].titulo;
@@ -1827,7 +1858,7 @@ function renderPerfil() {
 /* =========================================================
    ABA JOGOS
    ========================================================= */
-const filtroJ = { busca: '', plataforma: '', status: '', meta: '', prioridade: '', ordem: 'prioridade', abertos: false };
+const filtroJ = { busca: '', plataforma: '', status: '', meta: '', prioridade: '', ordem: 'prioridade', abertos: false, vista: 'biblioteca' };
 const ORDENS_J = [['prioridade', 'Prioridade'], ['nome', 'Nome (A–Z)'], ['dificuldade', 'Dificuldade (menor primeiro)'], ['horas', 'Horas estimadas (menor primeiro)'], ['progresso', 'Progresso (maior primeiro)']];
 const porNome = (a, b) => a.nome.localeCompare(b.nome, 'pt');
 const COMPARA_J = {
@@ -1838,9 +1869,15 @@ const COMPARA_J = {
   progresso: (a, b) => progressoJogo(b) - progressoJogo(a) || porNome(a, b)
 };
 
+const htmlVistaJogos = () => `<div class="segmentado">
+    <button data-acao="vista-jogos" data-v="biblioteca" class="${filtroJ.vista !== 'desejos' ? 'ativo' : ''}">Biblioteca (${state.jogos.length})</button>
+    <button data-acao="vista-jogos" data-v="desejos" class="${filtroJ.vista === 'desejos' ? 'ativo' : ''}">Desejos (${state.desejos.length})</button>
+  </div>`;
 function renderJogos() {
+  if (filtroJ.vista === 'desejos') { renderDesejos(); return; }
   const n = qtdJogando();
   $('#conteudo').innerHTML = `
+    ${htmlVistaJogos()}
     <div class="acoes-linha">
       <button class="btn pri" data-acao="novo-jogo">${ico('mais')}Adicionar</button>
       <button class="btn" data-acao="sugerir">${ico('alvo')}Próximo alvo</button>
@@ -1911,6 +1948,193 @@ function cardJogo(j) {
       <div class="legenda"><span>${legendaJogo(j)}</span>${htmlXpJogo(j)}</div>
       ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
     </div></article>`;
+}
+
+/* ---------- Lista de desejos ---------- */
+const brl = v => v == null ? '—' : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const precoAtual = d => d.preco && d.preco.atual != null ? d.preco.atual : null;
+const noAlvo = d => { const p = precoAtual(d); return p != null && !(d.preco && d.preco.gratis) && d.precoAlvo > 0 && p <= d.precoAlvo; };
+const linkLoja = d => d.link || (d.steamAppId ? `https://store.steampowered.com/app/${encodeURIComponent(d.steamAppId)}/` : '');
+const jaTenho = d => state.jogos.some(j => (d.steamAppId && String(j.steamAppId) === String(d.steamAppId)) || (j.plataforma === d.plataforma && norm(j.nome) === norm(d.nome)));
+const ORDENS_D = [['alvo', 'Mais perto do preço alvo'], ['desconto', 'Maior desconto'], ['preco', 'Menor preço'], ['nome', 'Nome (A–Z)'], ['recente', 'Adicionados por último']];
+const distAlvo = d => { const p = precoAtual(d); return p != null && d.precoAlvo > 0 ? p / d.precoAlvo : 99; };
+const COMPARA_D = {
+  alvo: (a, b) => distAlvo(a) - distAlvo(b) || ((b.preco && b.preco.desconto) || 0) - ((a.preco && a.preco.desconto) || 0) || porNome(a, b),
+  desconto: (a, b) => ((b.preco && b.preco.desconto) || 0) - ((a.preco && a.preco.desconto) || 0) || porNome(a, b),
+  preco: (a, b) => (precoAtual(a) ?? 1e9) - (precoAtual(b) ?? 1e9) || porNome(a, b),
+  nome: porNome,
+  recente: (a, b) => String(b.criado || '').localeCompare(String(a.criado || '')) || porNome(a, b)
+};
+let ordemD = 'alvo', precosTentado = 0;
+function definirPreco(d, p) {
+  d.preco = { atual: p.atual, original: p.original ?? p.atual, desconto: p.desconto || 0, gratis: !!p.gratis, em: hoje() };
+  if (!p.gratis && p.atual > 0) d.menorPreco = d.menorPreco == null ? p.atual : Math.min(d.menorPreco, p.atual);
+}
+function renderDesejos() {
+  const lista = state.desejos.slice().sort(COMPARA_D[ordemD] || COMPARA_D.alvo);
+  const steam = state.desejos.filter(d => d.steamAppId).length;
+  const quando = state.integracoes.precos;
+  const noAlvoN = state.desejos.filter(noAlvo).length;
+  $('#conteudo').innerHTML = `
+    ${htmlVistaJogos()}
+    <div class="acoes-linha">
+      <button class="btn pri" data-acao="novo-desejo">${ico('mais')}Adicionar desejo</button>
+      ${nuvem.usuario && steam ? `<button class="btn" data-acao="atualizar-precos">${ico('sync')}Atualizar preços</button>` : ''}
+    </div>
+    ${noAlvoN ? `<div class="alerta ok-alerta"><b>🎯 ${noAlvoN} jogo(s) no seu preço alvo!</b> Boa hora para comprar.</div>` : ''}
+    <p class="ajuda" style="margin:0 2px 12px">${nuvem.usuario
+      ? `Jogos da <b>Steam</b>: o preço vem sozinho${quando ? ` (atualizado ${new Date(quando).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })})` : ''} e, com o lembrete diário ativado, chega um aviso no celular quando bater o seu preço alvo — ou 50% de desconto, se não tiver alvo. <b>PlayStation</b>: anote o preço que você viu na loja.`
+      : 'Entre na sua conta para os preços da Steam virem sozinhos. Sem conta, anote os preços à mão.'}</p>
+    ${state.desejos.length > 1 ? `<div class="busca-linha">${campo('Ordenar por', `<select id="ordemDesejos">${opcoes(ORDENS_D, ordemD)}</select>`, 'largo')}</div>` : ''}
+    <div class="lista">${lista.length ? lista.map(cardDesejo).join('')
+      : '<div class="vazio">Nenhum jogo na lista de desejos ainda. Toque em “Adicionar desejo” e busque pelo nome.</div>'}</div>`;
+  const s = $('#ordemDesejos'); if (s) s.addEventListener('change', () => { ordemD = s.value; renderDesejos(); });
+  // Preços da Steam com mais de 6 h: atualiza sozinho em segundo plano
+  if (nuvem.usuario && steam && (!quando || Date.now() - Date.parse(quando) > 6 * 3600e3)) atualizarPrecos(true);
+}
+function cardDesejo(d) {
+  const p = d.preco, atual = precoAtual(d), alvo = noAlvo(d);
+  const chips = [];
+  if (alvo) chips.push('<span class="chip ok">✓ No seu preço alvo</span>');
+  if (p && p.desconto > 0) chips.push(`<span class="chip promo">−${p.desconto}%</span>`);
+  if (p && !p.gratis && d.menorPreco != null && atual != null && atual <= d.menorPreco && p.original > atual) chips.push('<span class="chip">Menor preço já visto</span>');
+  if (jaTenho(d)) chips.push('<span class="chip aviso">Já está na sua biblioteca</span>');
+  const perto = d.precoAlvo > 0 && atual != null && !(p && p.gratis) ? Math.min(100, Math.round(d.precoAlvo / atual * 100)) : null;
+  const loja = linkLoja(d);
+  return `<article class="card desejo${alvo ? ' no-alvo' : ''}" data-acao="editar-desejo" data-id="${d.id}">
+    ${capaJogo(d)}
+    <div class="card-corpo">
+      <div class="card-topo"><h3>${esc(d.nome)}</h3>
+        <span class="preco-grande">${p && p.gratis ? 'Grátis' : atual != null ? brl(atual) : '<span class="sem-preco">sem preço</span>'}</span></div>
+      <div class="info">
+        ${p && p.original > atual ? `<span class="riscado">${brl(p.original)}</span>` : ''}
+        <span>${d.precoAlvo > 0 ? `Alvo: <b>${brl(d.precoAlvo)}</b>` : 'Sem preço alvo'}</span>
+        ${d.menorPreco != null ? `<span>Menor visto: ${brl(d.menorPreco)}</span>` : ''}
+      </div>
+      ${perto != null ? `<span class="barra alvo" title="Quanto o preço atual está perto do alvo"><i style="width:${perto}%"></i></span>` : ''}
+      <div class="legenda"><span>${d.steamAppId ? 'Preço automático · Steam' : `${esc(d.plataforma)} · preço anotado${p && p.em ? ` em ${fmtData(p.em)}` : ''}`}</span>
+        ${loja ? `<a class="link-loja" href="${esc(loja)}" target="_blank" rel="noopener" data-parar>Abrir na loja ↗</a>` : ''}</div>
+      ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
+    </div></article>`;
+}
+function formDesejo(id) {
+  const novo = !id, d = novo ? desejoPadrao() : state.desejos.find(x => x.id === id);
+  if (!d) return;
+  const caixaSteam = () => `Ligado à Steam: o preço vem sozinho. <button type="button" class="btn link" data-desligar>Desligar</button>`;
+  const html = `<form class="form" id="fDesejo" novalidate>
+    ${nuvem.usuario ? `<div class="campo"><span class="rotulo">Buscar na Steam</span>
+      <div class="busca-linha" style="margin:0"><input id="buscaSteam" placeholder="Nome do jogo…" autocomplete="off" value="${novo ? '' : esc(d.nome)}">
+        <button class="btn" type="button" id="btnBuscaSteam">Buscar</button></div>
+      <div id="resultadosSteam" class="resultados-steam"></div>
+      <small class="ajuda">Escolher um resultado liga o preço automático. Para PlayStation, preencha o nome e o preço abaixo.</small></div>` : ''}
+    ${campo('Nome', `<input name="nome" required value="${esc(d.nome)}" autocomplete="off">`)}
+    <div class="g2">
+      ${campo('Plataforma', sel('plataforma', PLATAFORMAS, d.plataforma))}
+      ${campo('Preço alvo (R$)', `<input name="precoAlvo" type="number" min="0" step="0.01" inputmode="decimal" value="${d.precoAlvo ?? ''}" placeholder="ex.: 50">`)}
+    </div>
+    <div class="resumo" id="boxSteam" ${d.steamAppId ? '' : 'hidden'}>${caixaSteam()}</div>
+    <div id="boxManual" class="form" style="gap:inherit" ${d.steamAppId ? 'hidden' : ''}>
+      ${campo('Preço que você viu na loja (R$)', `<input name="precoManual" type="number" min="0" step="0.01" inputmode="decimal" value="${!d.steamAppId && d.preco ? d.preco.atual : ''}">`)}
+      ${campo('Link da loja (opcional)', `<input name="link" type="url" inputmode="url" value="${esc(d.link)}" placeholder="https://store.playstation.com/…">`)}
+    </div>
+    <input type="hidden" name="steamAppId" value="${esc(d.steamAppId || '')}">
+    ${campo('Notas', `<textarea name="notas" rows="2">${esc(d.notas)}</textarea>`)}
+    <button class="btn pri cheio" type="submit">${novo ? 'Adicionar à lista' : 'Salvar alterações'}</button>
+    ${novo ? '' : `<button class="btn cheio" type="button" data-acao="comprei-desejo" data-id="${d.id}">${ico('check')}Comprei! Mover para a biblioteca</button>
+      <button class="btn perigo cheio" type="button" data-acao="excluir-desejo" data-id="${d.id}">Remover da lista</button>`}
+  </form>`;
+  abrirSheet(novo ? 'Novo desejo' : 'Editar desejo', html, c => {
+    const f = $('#fDesejo', c), el = f.elements;
+    let escolhido = null, itens = [];
+    const ligarSteam = on => { $('#boxManual', c).hidden = on; $('#boxSteam', c).hidden = !on; if (!on) { el.steamAppId.value = ''; escolhido = null; } };
+    const buscar = async () => {
+      const termo = $('#buscaSteam', c).value.trim();
+      if (termo.length < 2) { toast('Digite pelo menos 2 letras.', 'erro'); return; }
+      const caixa = $('#resultadosSteam', c);
+      caixa.innerHTML = '<div class="carregando">Buscando na Steam…</div>';
+      try {
+        itens = (await chamarApi('api/precos?busca=' + encodeURIComponent(termo))).itens || [];
+        caixa.innerHTML = itens.length ? itens.map((i, k) => `<button type="button" class="opcao" data-res="${k}"><img src="${esc(i.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+          <span>${esc(i.nome)}<small>${i.preco ? brl(i.preco.atual) + (i.preco.desconto ? ` · −${i.preco.desconto}%` : '') : 'sem preço / gratuito'}</small></span></button>`).join('')
+          : '<p class="ajuda">Nada encontrado na Steam. Se for de PlayStation, preencha à mão abaixo.</p>';
+      } catch (e) { caixa.innerHTML = `<p class="erro-txt">${esc(e.message)}</p>`; }
+    };
+    if ($('#btnBuscaSteam', c)) {
+      $('#btnBuscaSteam', c).addEventListener('click', buscar);
+      $('#buscaSteam', c).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); buscar(); } });
+    }
+    c.addEventListener('click', e => {
+      const r = e.target.closest('[data-res]');
+      if (r) {
+        const i = itens[Number(r.dataset.res)]; if (!i) return;
+        escolhido = i; el.nome.value = i.nome; el.plataforma.value = 'Steam'; el.steamAppId.value = i.appid;
+        ligarSteam(true); $('#resultadosSteam', c).innerHTML = '';
+        toast(`Ligado à Steam: ${i.nome}`);
+      }
+      if (e.target.closest('[data-desligar]')) ligarSteam(false);
+    });
+    el.plataforma.addEventListener('change', () => { if (el.plataforma.value !== 'Steam' && el.steamAppId.value) ligarSteam(false); });
+    f.addEventListener('submit', e => { e.preventDefault(); salvarDesejo(f, d, novo, escolhido); });
+    if (novo && $('#buscaSteam', c)) setTimeout(() => $('#buscaSteam', c).focus(), 250);
+  });
+}
+function salvarDesejo(form, d, novo, escolhido) {
+  const f = Object.fromEntries(new FormData(form));
+  const nome = (f.nome || '').trim();
+  if (!nome) { toast('Informe o nome do jogo.', 'erro'); form.elements.nome.focus(); return; }
+  const alvo = positivo(num(f.precoAlvo));
+  const steamId = (f.steamAppId || '').trim() || null;
+  const trocouLoja = steamId !== (d.steamAppId || null);
+  Object.assign(d, { nome, plataforma: steamId ? 'Steam' : f.plataforma, precoAlvo: alvo > 0 ? alvo : null, notas: (f.notas || '').trim(), steamAppId: steamId });
+  if (trocouLoja) { d.preco = null; d.menorPreco = null; }
+  if (steamId) {
+    d.link = '';
+    if (escolhido && escolhido.preco) definirPreco(d, escolhido.preco);
+  } else {
+    d.link = (f.link || '').trim();
+    const manual = positivo(num(f.precoManual));
+    if (manual != null) { if (!d.preco || d.preco.atual !== manual) definirPreco(d, { atual: manual, original: manual, desconto: 0 }); }
+    else d.preco = null;
+  }
+  if (novo) state.desejos.push(d);
+  salvar(); fecharSheet(); filtroJ.vista = 'desejos'; render();
+  toast(noAlvo(d) ? `🎯 ${d.nome} já está no seu preço alvo!` : novo ? 'Adicionado à lista de desejos.' : 'Alterações salvas.');
+}
+async function atualizarPrecos(silencioso = false) {
+  const ids = [...new Set(state.desejos.filter(d => d.steamAppId).map(d => String(d.steamAppId)))];
+  if (!ids.length || !nuvem.usuario) return;
+  if (silencioso && Date.now() - precosTentado < 10 * 60e3) return; // falhou há pouco: espera
+  precosTentado = Date.now();
+  const btn = $('[data-acao="atualizar-precos"]'); if (btn) btn.disabled = true;
+  try {
+    const r = await chamarApi('api/precos?appids=' + ids.join(','));
+    let destaque = 0;
+    state.desejos.forEach(d => {
+      const p = d.steamAppId && r.precos && r.precos[String(d.steamAppId)];
+      if (p) { definirPreco(d, p); if (noAlvo(d) || p.desconto > 0) destaque++; }
+    });
+    state.integracoes.precos = new Date().toISOString();
+    salvar();
+    if (abaAtual === 'jogos' && filtroJ.vista === 'desejos' && $('#sheetFundo').hidden) renderDesejos();
+    if (!silencioso) toast(`Preços atualizados${destaque ? ` · ${destaque} em promoção ou no alvo` : ''}.`);
+  } catch (e) { if (!silencioso) toast(e.message, 'erro'); }
+  finally { const b = $('[data-acao="atualizar-precos"]'); if (b) b.disabled = false; }
+}
+function comprarDesejo(id) {
+  const d = state.desejos.find(x => x.id === id); if (!d) return;
+  if (!confirm(`Mover “${d.nome}” para a biblioteca, como “Na fila”?`)) return;
+  state.jogos.push(Object.assign(jogoPadrao(), {
+    nome: d.nome, plataforma: d.plataforma, status: 'Na fila', notas: d.notas,
+    meta: d.plataforma === 'Steam' ? '100% conquistas' : 'Platinar', steamAppId: d.steamAppId || null
+  }));
+  state.desejos = state.desejos.filter(x => x.id !== id);
+  salvar(); fecharSheet(); render(); toast(`${d.nome} foi para a biblioteca. Bom jogo!`);
+}
+function excluirDesejo(id) {
+  const d = state.desejos.find(x => x.id === id); if (!d) return;
+  if (!confirm(`Remover “${d.nome}” da lista de desejos?`)) return;
+  state.desejos = state.desejos.filter(x => x.id !== id);
+  salvar(); fecharSheet(); render(); toast('Removido da lista.');
 }
 
 // Aplica mudança de status com datas automáticas
@@ -2543,10 +2767,16 @@ function renderConfig() {
         <button class="btn" data-acao="csv-livros">Livros em CSV</button>
       </div>
     </section>
+    ${nuvem.usuario ? `<section class="bloco"><h2>Cópias automáticas na nuvem</h2>
+      <p class="ajuda" style="margin-bottom:10px">Toda semana o servidor guarda uma cópia completa da sua estante (ficam as 8 mais recentes). Se algo der errado, é só restaurar uma delas.</p>
+      <div id="listaCopias"><div class="carregando">Carregando cópias…</div></div>
+      <button class="btn cheio" data-acao="copia-agora" style="margin-top:10px">Fazer uma cópia agora</button>
+    </section>` : ''}
     <section class="bloco"><h2>Zona de perigo</h2>
       <button class="btn perigo cheio" data-acao="apagar-tudo">Apagar tudo</button>
     </section>
     <p class="ajuda" style="text-align:center;margin:8px 0">${state.jogos.length} jogos · ${state.livros.length} livros${armazenamentoOk ? '' : ' · ⚠ armazenamento bloqueado neste navegador'}</p></div>`;
+  if (nuvem.usuario) carregarCopias();
   $$('[data-config-txt]').forEach(s => s.addEventListener('change', () => { c[s.dataset.configTxt] = s.value; salvar(); toast('Configuração salva.'); }));
   $$('[data-config]').forEach(inp => inp.addEventListener('change', () => {
     const v = num(inp.value), k = inp.dataset.config;
@@ -2554,6 +2784,43 @@ function renderConfig() {
     c[k] = Math.min(Number(inp.max), v); inp.value = c[k];
     salvar(); toast('Configuração salva.');
   }));
+}
+
+/* ---------- Cópias na nuvem (tabela backups do Supabase) ---------- */
+const copiaDoEstado = () => ({ origem: 'manual', jogos: state.jogos.length, livros: state.livros.length, dados: JSON.parse(JSON.stringify(state)) });
+async function carregarCopias() {
+  const caixa = $('#listaCopias'); if (!caixa || !nuvem.cli || !nuvem.usuario) return;
+  try {
+    const { data, error } = await nuvem.cli.from('backups').select('id,criado_em,origem,jogos,livros').order('criado_em', { ascending: false }).limit(12);
+    if (error) throw error;
+    if (!caixa.isConnected) return;
+    caixa.innerHTML = data.length ? data.map(b => `<div class="integracao"><span>${new Date(b.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
+        <small>${b.origem === 'auto' ? 'Automática' : 'Feita por você'} · ${b.jogos ?? '?'} jogos · ${b.livros ?? '?'} livros</small></span>
+        <button class="btn mini" data-acao="restaurar-copia" data-id="${b.id}">Restaurar</button></div>`).join('')
+      : '<p class="ajuda">Nenhuma cópia ainda. A primeira automática acontece na próxima noite (por volta das 21h), ou faça uma agora.</p>';
+  } catch (e) {
+    if (!caixa.isConnected) return;
+    const semTabela = /backups|relation|does not exist|schema cache|PGRST205/i.test(`${e.message || ''} ${e.code || ''}`);
+    caixa.innerHTML = semTabela ? '<p class="ajuda">⚠ Falta criar a tabela de cópias no Supabase: rode o trecho novo do <code>supabase.sql</code>.</p>' : '<p class="ajuda">Não consegui carregar as cópias agora. Tente de novo mais tarde.</p>';
+  }
+}
+async function fazerCopiaAgora() {
+  if (!nuvem.usuario) { mostrarLogin(); return; }
+  const { error } = await nuvem.cli.from('backups').insert(copiaDoEstado());
+  if (error) { toast('Não consegui guardar a cópia agora.', 'erro'); return; }
+  toast('Cópia guardada na nuvem.'); carregarCopias();
+}
+async function restaurarCopia(id) {
+  if (!nuvem.usuario) { mostrarLogin(); return; }
+  const { data, error } = await nuvem.cli.from('backups').select('criado_em,dados').eq('id', id).single();
+  if (error || !data || !data.dados || !Array.isArray(data.dados.jogos)) { toast('Não consegui abrir essa cópia.', 'erro'); return; }
+  const quando = new Date(data.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+  if (!confirm(`Restaurar a cópia de ${quando}?\n\n${data.dados.jogos.length} jogos e ${(data.dados.livros || []).length} livros.\nIsso substitui os dados atuais em todos os aparelhos.\nAntes, guardo uma cópia do estado atual, por segurança.`)) return;
+  // Cópia de segurança do estado atual antes de trocar (se falhar, não restaura)
+  const seg = await nuvem.cli.from('backups').insert(copiaDoEstado());
+  if (seg.error) { toast('Não consegui guardar a cópia de segurança; nada foi alterado.', 'erro'); return; }
+  state = migrar(data.dados); delete state.semente;
+  salvar(); aplicarTema(); render(); toast(`Cópia de ${quando} restaurada.`);
 }
 
 /* ---------- Backup (JSON) e CSV ---------- */
@@ -3068,11 +3335,22 @@ const ACOES = {
   'sync-agora': async () => { fecharSheet(); if (lerMeta().pendente) await enviar(); else await sincronizar(false); toast(nuvem.estado === 'ok' ? 'Tudo sincronizado.' : 'Não foi possível sincronizar agora.', nuvem.estado === 'ok' ? '' : 'aviso'); },
   'sair': () => sairDaConta(),
   'abrir-sync': () => menuSync(),
+  // Lista de desejos
+  'vista-jogos': el => { filtroJ.vista = el.dataset.v; renderJogos(); },
+  'novo-desejo': () => formDesejo(null),
+  'editar-desejo': el => formDesejo(el.dataset.id),
+  'excluir-desejo': el => excluirDesejo(el.dataset.id),
+  'comprei-desejo': el => comprarDesejo(el.dataset.id),
+  'atualizar-precos': () => atualizarPrecos(false),
+  // Cópias na nuvem
+  'copia-agora': () => fazerCopiaAgora(),
+  'restaurar-copia': el => restaurarCopia(Number(el.dataset.id)),
   'sync-fonte': el => sincronizarFonte(el.dataset.fonte),
   'sync-todos': el => { $$('[data-sync]').forEach(s => { s.value = el.dataset.v; }); },
   'aplicar-sync': () => aplicarPlano()
 };
 document.addEventListener('click', e => {
+  if (e.target.closest('a[data-parar]')) return; // link de loja dentro de um card clicável: deixa abrir
   const el = e.target.closest('[data-acao]');
   if (!el || el.disabled) return;
   const fn = ACOES[el.dataset.acao];
