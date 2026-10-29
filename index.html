@@ -2672,6 +2672,29 @@ function renderListaLivros() {
   $('#listaLivros').innerHTML = lista.length ? lista.map(cardLivro).join('') : '<div class="vazio">Nenhum livro com esses filtros.</div>';
 }
 // Capa do livro (ou o quadro marrom com as iniciais enquanto não houver)
+// Reduz uma foto da capa (câmera/galeria) para no máximo 240×360 px em JPEG (~20–40 KB),
+// guardada no próprio livro: sincroniza com a nuvem junto com o resto, sem configurar nada.
+async function reduzirFoto(arquivo, larg = 240, alt = 360, limite = 60000) {
+  if (!arquivo || !/^image\//.test(arquivo.type || '')) throw new Error('Escolha uma imagem (foto ou print da capa).');
+  const url = URL.createObjectURL(arquivo);
+  try {
+    const img = await new Promise((ok, falha) => {
+      const i = new Image();
+      i.onload = () => ok(i); i.onerror = () => falha(new Error('Não consegui abrir essa imagem. Tente outra foto.'));
+      i.src = url;
+    });
+    const fator = Math.min(1, larg / img.naturalWidth, alt / img.naturalHeight);
+    const w = Math.max(1, Math.round(img.naturalWidth * fator)), h = Math.max(1, Math.round(img.naturalHeight * fator));
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h); // fundo branco para imagens com transparência
+    ctx.drawImage(img, 0, 0, w, h);
+    let q = 0.82, dado = cv.toDataURL('image/jpeg', q);
+    while (dado.length > limite && q > 0.45) { q -= 0.1; dado = cv.toDataURL('image/jpeg', q); }
+    return dado;
+  } finally { URL.revokeObjectURL(url); }
+}
 function capaLivro(l, extra = '', estilo = '') {
   const mini = extra.includes('mini'), tag = mini ? 'span' : 'div';
   const img = l.capa ? `<img class="capa-img" src="${esc(l.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '';
@@ -2848,6 +2871,7 @@ function formLivro(id) {
     <div class="capa-form"><span id="capaPrevia">${capaLivro(Object.assign({}, l, { id: 'previa' }), 'mini', 'width:52px;height:74px')}</span>
       <input type="hidden" name="capa" value="${esc(l.capa)}"><input type="hidden" name="capaMexeu" value="">
       <div class="acoes-linha" style="margin:0"><button class="btn mini" type="button" data-capa-trocar>🔄 ${l.capa ? 'Trocar capa' : 'Buscar capa'}</button>
+        <label class="btn mini">📷 Enviar foto<input type="file" accept="image/*" data-capa-foto hidden></label>
         <button class="btn mini" type="button" data-capa-tirar>Sem capa</button></div></div>
     <div class="g3">
       ${campo('Categoria', sel('categoria', CATEGORIAS, l.categoria))}
@@ -2899,6 +2923,14 @@ function formLivro(id) {
       toast(`Capa ${idx + 1} de ${opcoesCapa.length}`);
     });
     $('[data-capa-tirar]', c).addEventListener('click', () => mostrarCapa(''));
+    // Foto própria (câmera ou galeria): reduzida no aparelho antes de guardar
+    $('[data-capa-foto]', c).addEventListener('change', async ev => {
+      const arq = ev.target.files && ev.target.files[0];
+      ev.target.value = '';
+      if (!arq) return;
+      try { mostrarCapa(await reduzirFoto(arq)); toast('Foto pronta. Toque em salvar para guardar.'); }
+      catch (e) { toast(e.message || 'Não consegui usar essa imagem.', 'erro'); }
+    });
     f.addEventListener('submit', e => { e.preventDefault(); salvarFormLivro(f, l, novo, posAtual); });
     if (novo) setTimeout(() => el.titulo.focus(), 250);
   });
