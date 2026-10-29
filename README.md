@@ -20,7 +20,7 @@ App pessoal para organizar jogos (PS4, PS5, Steam) e livros. Funciona no celular
 | `api/precos.js`, `api/_precos.js` | Busca jogos e preços (em reais) na loja da Steam para a lista de desejos |
 | `api/trofeus.js` | Lista completa de troféus/conquistas de um jogo (PSN ou Steam): todos, quais já foram pegos, data, raridade e descrição |
 | `api/_psn.js`, `api/_steam.js` | Login na PSN e credenciais da Steam, usados por mais de uma rota |
-| `api/promocoes.js` | Aba Promoções: promoções em destaque da Steam (em reais) e preços da GG.deals (API oficial) para a lista de desejos |
+| `api/promocoes.js` | Aba Promoções: promoções da Steam, preços da GG.deals para a lista de desejos e ofertas de lojas de PC do IsThereAnyDeal |
 | `sw.js`, `manifest.webmanifest`, `icones/` | App instalável (tela inicial), abre offline e recebe notificações |
 
 ## Instalação (uma vez)
@@ -96,4 +96,6 @@ Quando a sincronização da PSN avisar que o NPSSO expirou: gere um novo (passo 
 - **Sua lista de desejos na GG.deals**: melhor preço em lojas oficiais e keyshops, e o menor preço da história, para os jogos da Steam da lista de desejos.
   Precisa da chave gratuita da API oficial: crie conta em gg.deals, gere a chave da API e adicione na Vercel como `GGDEALS_API_KEY` (depois **Redeploy**).
   Uso pessoal; a GG.deals pede crédito com link onde os preços aparecem (o app já mostra).
-- O botão **Abrir GG.deals** leva ao site, que tem todas as promoções de todas as lojas.
+- **Ofertas de todas as lojas de PC** (IsThereAnyDeal, API oficial): Novas ofertas, Maiores descontos e Mínimas históricas, em reais.
+  Precisa da chave gratuita: crie conta em isthereanydeal.com, confirme o e-mail, registre um app em isthereanydeal.com/apps/my/ e adicione na Vercel como `ITAD_API_KEY` (depois **Redeploy**). Termos: uso pessoal, com link para o IsThereAnyDeal; os links das lojas não são alterados.
+- O botão **Abrir GG.deals** leva ao site, que também mostra ofertas de PlayStation e Xbox.

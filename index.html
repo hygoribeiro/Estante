@@ -570,6 +570,7 @@ a.btn.pri{color:var(--pri-txt)}
 .promo-grade{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .promo-card{display:flex;flex-direction:column;background:var(--card2);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden}
 .promo-card img{display:block;width:100%;aspect-ratio:460/215;object-fit:cover;background:var(--card)}
+.promo-sem-capa{aspect-ratio:460/215;background:linear-gradient(160deg,var(--card),var(--card2))}
 .promo-corpo{padding:10px 12px 12px;display:grid;gap:6px}
 .promo-corpo h3{font-size:15px;margin:0;line-height:1.3}
 .promo-precos{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -2024,7 +2025,9 @@ function cardJogo(j) {
    Guardado só neste aparelho; renova a cada 1 h (Steam) e 6 h (GG.deals). */
 const CHAVE_PROMO = 'minhaEstante.promocoes', GG_SITE = 'https://gg.deals/br/deals/';
 let promoCarregando = false, ggCarregando = false, promoErro = '', ggErro = '', promoTentado = 0;
-const filtroP = { min: 0 };
+let itadCarregando = false, itadErro = '';
+const filtroP = { min: 0, itad: 'novas', dlc: false };
+const LISTAS_ITAD = [['novas', 'Novas ofertas'], ['descontos', 'Maiores descontos'], ['minimas', 'Mínimas históricas']];
 function lerPromo() { try { return JSON.parse(localStorage.getItem(CHAVE_PROMO)) || {}; } catch (e) { return {}; } }
 function gravarPromo(mudar) { const c = Object.assign(lerPromo(), mudar); try { localStorage.setItem(CHAVE_PROMO, JSON.stringify(c)); } catch (e) { /* sem espaço */ } }
 const passouHoras = (iso, h) => !iso || Date.now() - Date.parse(iso) > h * 3600e3;
@@ -2033,7 +2036,7 @@ const linkGg = (d, g) => (g && g.url) || `https://gg.deals/br/search/?title=${en
 
 async function carregarPromocoes(forcar = false) {
   if (!nuvem.usuario) return;
-  if (!forcar && Date.now() - promoTentado < 10 * 60e3 && (promoErro || ggErro)) return; // falhou há pouco: espera
+  if (!forcar && Date.now() - promoTentado < 10 * 60e3 && (promoErro || ggErro || itadErro)) return; // falhou há pouco: espera
   const c = lerPromo(), ids = idsDesejosSteam(), chaveIds = ids.slice().sort().join(',');
   const tarefas = [];
   if (!promoCarregando && (forcar || passouHoras(c.steamEm, 1))) {
@@ -2050,12 +2053,21 @@ async function carregarPromocoes(forcar = false) {
       .catch(e => { ggErro = e.message; })
       .finally(() => { ggCarregando = false; }));
   }
+  const lista = filtroP.itad;
+  if (!itadCarregando && nuvem.integracoes.itad && (forcar || passouHoras(c['itadEm_' + lista], 1))) {
+    itadCarregando = true;
+    tarefas.push(chamarApi('api/promocoes?tipo=itad&lista=' + lista)
+      .then(r => { gravarPromo({ ['itad_' + lista]: r.itens, ['itadEm_' + lista]: r.atualizado }); itadErro = ''; })
+      .catch(e => { itadErro = e.message; })
+      .finally(() => { itadCarregando = false; }));
+  }
   if (!tarefas.length) return;
   promoTentado = Date.now();
   if (abaAtual === 'promocoes') renderPromocoes(false);
   await Promise.all(tarefas);
   if (abaAtual === 'promocoes' && $('#sheetFundo').hidden) renderPromocoes(false);
-  if (forcar) toast(promoErro || ggErro ? 'Algumas promoções não vieram agora.' : 'Promoções atualizadas.', promoErro || ggErro ? 'aviso' : '');
+  const falhou = promoErro || ggErro || itadErro;
+  if (forcar) toast(falhou ? 'Algumas promoções não vieram agora.' : 'Promoções atualizadas.', falhou ? 'aviso' : '');
 }
 function htmlGgDesejos(c) {
   const desejos = state.desejos.filter(d => d.steamAppId);
@@ -2076,6 +2088,50 @@ function htmlGgDesejos(c) {
       ${g ? `${preco(g.varejo, g.menorVarejo, 'Lojas oficiais')}${preco(g.keyshop, g.menorKeyshop, 'Keyshops')}` : '<p class="ajuda">A GG.deals não tem preço para este jogo agora.</p>'}
       <a class="link-loja" href="${esc(linkGg(d, g))}" target="_blank" rel="noopener">Ver todas as lojas na GG.deals ↗</a></div></div>`;
   }).join('') + `<p class="credito-gg">Preços: <a href="https://gg.deals" target="_blank" rel="noopener">GG.deals</a>${c.ggEm ? ` · atualizado ${new Date(c.ggEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}. Keyshops são lojas de chaves de terceiros: confira a reputação antes de comprar.</p>`;
+}
+// Ofertas de várias lojas de PC (IsThereAnyDeal). Links vão direto para a loja (link oficial do ITAD, sem alterar)
+// e para a página do jogo no IsThereAnyDeal, como pedem os termos da API.
+function cardItad(o) {
+  const naLista = state.desejos.some(d => norm(d.nome) === norm(o.titulo));
+  const tenho = state.jogos.some(j => norm(j.nome) === norm(o.titulo));
+  return `<article class="promo-card">
+    ${o.capa ? `<img src="${esc(o.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="promo-sem-capa"></div>'}
+    <div class="promo-corpo">
+      <h3>${esc(o.titulo)}</h3>
+      <div class="promo-precos">${o.desconto ? `<span class="selo-desc">−${o.desconto}%</span>` : ''}${o.original > o.preco ? `<span class="riscado">${brl(o.original)}</span>` : ''}<span class="preco-grande">${brl(o.preco)}</span></div>
+      <div class="chips" style="margin:0">${o.ehMinima ? '<span class="chip promo">🔥 Menor preço da história</span>' : o.menorHistoria != null ? `<span class="chip">Menor da história: ${brl(o.menorHistoria)}</span>` : ''}
+        ${o.tipo && o.tipo !== 'game' ? `<span class="chip">${o.tipo === 'dlc' ? 'DLC' : esc(o.tipo)}</span>` : ''}${o.voucher ? `<span class="chip ok">Cupom: ${esc(o.voucher)}</span>` : ''}</div>
+      <div class="trofeu-meta"><span>${esc(o.loja)}</span>${o.drm.length ? `<span>ativa na ${esc(o.drm.join(' / '))}</span>` : ''}${o.expira ? `<span>até ${new Date(o.expira).toLocaleDateString('pt-BR')}</span>` : ''}</div>
+      <div class="promo-acoes">
+        ${o.url ? `<a class="link-guia" href="${esc(o.url)}" target="_blank" rel="noopener">Ver na ${esc(o.loja || 'loja')} ↗</a>` : ''}
+        <a class="link-guia" href="${esc(o.pagina)}" target="_blank" rel="noopener">Preços ↗</a>
+        ${tenho ? '<span class="chip ok">Você já tem</span>' : naLista ? '<span class="chip ok">Na lista ✓</span>'
+          : `<button class="btn mini" data-acao="itad-desejo" data-id="${esc(o.id)}">${ico('mais')}Desejos</button>`}
+      </div>
+    </div></article>`;
+}
+function htmlItad(c) {
+  if (!nuvem.usuario) return '<p class="ajuda">Entre na sua conta para ver as ofertas de todas as lojas aqui.</p>';
+  if (!nuvem.integracoes.itad) return `<p class="ajuda">Para ver aqui as novas ofertas, os maiores descontos e as mínimas históricas de lojas de PC (Steam, Epic, GOG, Fanatical, Humble…), falta ligar o IsThereAnyDeal:
+    crie uma conta grátis em <a href="https://isthereanydeal.com" target="_blank" rel="noopener">isthereanydeal.com</a>, registre um app para ganhar a chave da API e coloque na Vercel como <code>ITAD_API_KEY</code>.</p>`;
+  const lista = filtroP.itad, todos = c['itad_' + lista];
+  const itens = (todos || []).filter(o => filtroP.dlc || !o.tipo || o.tipo === 'game');
+  return `<div class="segmentado tres">${LISTAS_ITAD.map(([v, r]) => `<button data-acao="lista-itad" data-v="${v}" class="${lista === v ? 'ativo' : ''}">${r}</button>`).join('')}</div>
+    <label class="check" style="margin:0 2px 10px"><input type="checkbox" id="itadDlc" ${filtroP.dlc ? 'checked' : ''}> Mostrar DLCs e pacotes também</label>
+    ${itadCarregando && !todos ? '<div class="carregando">Buscando ofertas…</div>'
+      : itens.length ? `<div class="promo-grade">${itens.map(cardItad).join('')}</div>`
+      : todos ? '<div class="vazio">Nenhuma oferta nesta lista agora.</div>' : ''}
+    <p class="credito-gg">Ofertas: <a href="https://isthereanydeal.com/deals/" target="_blank" rel="noopener">IsThereAnyDeal</a> (API oficial), preços em reais${c['itadEm_' + lista] ? ` · atualizado ${new Date(c['itadEm_' + lista]).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}. Só lojas de PC.</p>
+    ${itadErro ? `<div class="alerta">${esc(itadErro)}</div>` : ''}`;
+}
+function itadParaDesejo(id) {
+  const c = lerPromo();
+  const o = LISTAS_ITAD.flatMap(([v]) => c['itad_' + v] || []).find(x => x.id === id); if (!o) return;
+  if (state.desejos.some(d => norm(d.nome) === norm(o.titulo))) { toast('Já está na sua lista de desejos.'); return; }
+  const d = Object.assign(desejoPadrao(), { nome: o.titulo, plataforma: 'Steam', link: o.url || o.pagina });
+  definirPreco(d, { atual: o.preco, original: o.original ?? o.preco, desconto: o.desconto });
+  state.desejos.push(d);
+  salvar(); renderPromocoes(false); toast(`${o.titulo} foi para a lista de desejos.`);
 }
 function cardPromo(p) {
   const naLista = state.desejos.some(d => String(d.steamAppId) === p.appid);
@@ -2100,8 +2156,9 @@ function renderPromocoes(buscar = true) {
       <a class="btn pri" href="${GG_SITE}" target="_blank" rel="noopener">Abrir GG.deals ↗</a>
       ${nuvem.usuario ? `<button class="btn" data-acao="atualizar-promos" ${promoCarregando || ggCarregando ? 'disabled' : ''}>${ico('sync')}${promoCarregando || ggCarregando ? 'Atualizando…' : 'Atualizar'}</button>` : ''}
     </div>
-    <p class="ajuda" style="margin:0 2px 12px">O site da GG.deals tem todas as promoções de todas as lojas: use o botão acima. Aqui no app ficam o melhor preço dos seus desejos e as promoções em destaque da Steam.</p>
+    <p class="ajuda" style="margin:0 2px 12px">Aqui ficam o melhor preço dos seus desejos, as ofertas das lojas de PC e as promoções em destaque da Steam. O botão acima abre o site da GG.deals, que também mostra ofertas de PlayStation e Xbox.</p>
     <section class="bloco"><h2>Sua lista de desejos na GG.deals</h2>${htmlGgDesejos(c)}${ggErro ? `<div class="alerta">${esc(ggErro)}</div>` : ''}</section>
+    <section class="bloco"><h2>Ofertas de todas as lojas de PC</h2>${htmlItad(c)}</section>
     <section class="bloco"><h2>Promoções em destaque na Steam</h2>
       ${!nuvem.usuario ? '<p class="ajuda">Entre na sua conta para ver as promoções da Steam aqui.</p>'
         : promoCarregando && !c.steam ? '<div class="carregando">Buscando promoções na Steam…</div>'
@@ -2111,6 +2168,7 @@ function renderPromocoes(buscar = true) {
       ${promoErro ? `<div class="alerta">${esc(promoErro)}</div>` : ''}
     </section>`;
   const s = $('#promoMin'); if (s) s.addEventListener('change', () => { filtroP.min = Number(s.value); renderPromocoes(false); });
+  const dlc = $('#itadDlc'); if (dlc) dlc.addEventListener('change', () => { filtroP.dlc = dlc.checked; renderPromocoes(false); });
   if (buscar) carregarPromocoes();
 }
 function promoParaDesejo(appid) {
@@ -3708,6 +3766,8 @@ const ACOES = {
   // Promoções
   'atualizar-promos': () => carregarPromocoes(true),
   'promo-desejo': el => promoParaDesejo(el.dataset.appid),
+  'itad-desejo': el => itadParaDesejo(el.dataset.id),
+  'lista-itad': el => { filtroP.itad = el.dataset.v; renderPromocoes(false); carregarPromocoes(); },
   // Troféus de um jogo
   'ver-trofeus': el => { fecharSheet(); filtroT.vista = 'faltam'; filtroT.revelar = false; trofErro = ''; location.hash = 'trofeus/' + encodeURIComponent(el.dataset.id); },
   'voltar-jogos': () => { location.hash = 'jogos'; },
