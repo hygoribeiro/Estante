@@ -18,6 +18,8 @@ App pessoal para organizar jogos (PS4, PS5, Steam) e livros. Funciona no celular
 | `vercel.json`, `package.json` | Configuração da Vercel |
 | `api/lembrete.js` | Tarefas diárias do cron da Vercel (21h): backup semanal, lembrete e alerta de preço |
 | `api/precos.js`, `api/_precos.js` | Busca jogos e preços (em reais) na loja da Steam para a lista de desejos |
+| `api/trofeus.js` | Lista completa de troféus/conquistas de um jogo (PSN ou Steam): todos, quais já foram pegos, data, raridade e descrição |
+| `api/_psn.js`, `api/_steam.js` | Login na PSN e credenciais da Steam, usados por mais de uma rota |
 | `sw.js`, `manifest.webmanifest`, `icones/` | App instalável (tela inicial), abre offline e recebe notificações |
 
 ## Instalação (uma vez)

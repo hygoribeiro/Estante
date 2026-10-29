@@ -1,7 +1,8 @@
 // Sincronização com a PSN usando a biblioteca NÃO OFICIAL psn-api.
 // Variável na Vercel: PSN_NPSSO (token de 64 caracteres; expira em ~2 meses).
 import * as psn from 'psn-api';
-import { verificarUsuario, responderErro, ErroHttp, norm } from './_comum.js';
+import { verificarUsuario, responderErro, norm } from './_comum.js';
+import { loginPsn } from './_psn.js';
 
 // "PT228H56M33S" (ou "P1DT2H...") -> horas com 1 casa decimal
 function horasDeDuracao(d) {
@@ -19,19 +20,7 @@ const plataformaDe = lista => {
 export default async function handler(req, res) {
   try {
     await verificarUsuario(req);
-    const npsso = (process.env.PSN_NPSSO || '').trim();
-    if (!npsso) throw new ErroHttp(400, 'PSN não configurada: falta PSN_NPSSO na Vercel.');
-
-    // Login na PSN (os nomes das funções mudaram entre versões da biblioteca)
-    let autorizacao;
-    try {
-      const trocarNpsso = psn.exchangeNpssoForAccessCode || psn.exchangeNpssoForCode;
-      const trocarCodigo = psn.exchangeAccessCodeForAuthTokens || psn.exchangeCodeForAccessToken;
-      autorizacao = await trocarCodigo(await trocarNpsso(npsso));
-    } catch (e) {
-      throw new ErroHttp(401, 'O token NPSSO da PSN expirou ou é inválido. Gere um novo, atualize PSN_NPSSO na Vercel e faça Redeploy.');
-    }
-    const a = { accessToken: autorizacao.accessToken };
+    const a = await loginPsn();
     const avisos = [];
 
     // 1) Jogos com troféus (progresso, platina)

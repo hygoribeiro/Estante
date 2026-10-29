@@ -563,6 +563,47 @@ a.icone-btn{color:var(--txt)}
 .resultados-steam img{width:34px;height:46px;object-fit:cover;border-radius:6px;flex:none;background:var(--card2)}
 .resultados-steam small{display:block;color:var(--txt2);font-size:12px;font-weight:500}
 
+/* Troféus de um jogo */
+.chip.trof{display:inline-flex;align-items:center;gap:4px;color:var(--ouro);border-color:color-mix(in srgb,var(--ouro) 40%,var(--borda));cursor:pointer}
+.chip.trof .ico{width:13px;height:13px}
+.segmentado.tres{grid-template-columns:repeat(3,1fr)}
+.trof-cab{display:grid;grid-template-columns:72px 1fr;gap:14px;align-items:center}
+.trof-cab .capa{height:96px}
+.trof-info{min-width:0;display:grid;gap:6px}
+.trof-nome{font-size:18px;margin:0;letter-spacing:0;text-transform:none;color:var(--txt)}
+.trof-num{font-size:14px;color:var(--txt2)}
+.trof-num b{font-family:var(--fonte-d);font-size:20px;color:var(--txt)}
+.trof-tipos{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px;color:var(--txt2)}
+.trof-tipos span{display:inline-flex;align-items:center;gap:4px}
+.trof-tipos .ico{width:15px;height:15px}
+.t-plat{color:#9fd3ff}.t-ouro{color:#ffc53d}.t-prata{color:#c9d1dc}.t-bronze{color:#e0915a}.t-conq{color:var(--pri)}
+[data-tema="claro"] .t-plat{color:#2b6fa8}[data-tema="claro"] .t-ouro{color:#946000}[data-tema="claro"] .t-prata{color:#5c6675}[data-tema="claro"] .t-bronze{color:#9a5521}
+.links-guia{display:flex;flex-wrap:wrap;gap:8px}
+.link-guia{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:9px;border:1px solid var(--borda);background:var(--card2);color:var(--txt);font-size:13px;font-weight:650;text-decoration:none}
+.link-guia:hover{border-color:var(--pri)}
+.grupo-trof{font-size:14px;margin:16px 2px 8px;color:var(--txt2)}
+.grupo-trof small{font-weight:600;color:var(--txt3)}
+.lista-trof{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.trofeu{display:grid;grid-template-columns:52px 1fr;gap:12px;padding:12px;background:var(--card);border:1px solid var(--borda);border-radius:var(--raio)}
+.trofeu.ganho{border-color:color-mix(in srgb,var(--ok) 35%,var(--borda))}
+.trofeu-ico{width:52px;height:52px;border-radius:10px;object-fit:cover;background:var(--card2);filter:grayscale(1) brightness(.7)}
+.trofeu.ganho .trofeu-ico{filter:none}
+.trofeu-ico.vazio{display:flex;align-items:center;justify-content:center;color:var(--txt3)}
+.trofeu-ico.vazio .ico{width:24px;height:24px}
+.trofeu-corpo{min-width:0;display:grid;gap:4px}
+.trofeu-topo{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.trofeu-topo b{font-size:15px;line-height:1.3}
+.tipo-trof{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid currentColor}
+.trofeu-desc{margin:0;font-size:13.5px;color:var(--txt2);line-height:1.45}
+.trofeu-meta{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--txt3)}
+.ok-txt{color:var(--ok);font-weight:650}
+.como summary{cursor:pointer;color:var(--pri);font-size:13px;font-weight:650;padding:4px 0;list-style:none}
+.como summary::-webkit-details-marker{display:none}
+.como summary::after{content:" ▾"}
+.como[open] summary::after{content:" ▴"}
+.como .links-guia{margin-top:6px}
+@media (min-width:1024px){.lista-trof{grid-template-columns:repeat(auto-fill,minmax(440px,1fr))}}
+
 /* Telas bem largas (1600 px ou mais): aproveita o espaço com até 3 colunas de cards */
 @media (min-width:1600px){
   main{max-width:1520px}
@@ -883,15 +924,17 @@ const ABAS = {
   missoes: { titulo: 'Missões', render: () => renderMissoes() },
   perfil: { titulo: 'Perfil', render: () => renderPerfil() },
   retro: { titulo: 'Retrospectiva', render: () => renderRetro() },
+  trofeus: { titulo: 'Troféus', render: () => renderTrofeus() }, // aberta por #trofeus/<id do jogo>, fora do menu
   config: { titulo: 'Configurações', render: () => renderConfig() }
 };
 let abaAtual = 'painel';
 function irPara(aba) {
   if (aba === 'desejos') { filtroJ.vista = 'desejos'; aba = 'jogos'; } // link da notificação de preço
+  if (aba.startsWith('trofeus/')) { trofeusJogo = decodeURIComponent(aba.slice(8)); aba = 'trofeus'; filtroT.busca = ''; }
   if (!ABAS[aba]) aba = 'painel';
   abaAtual = aba;
   $('#tituloAba').textContent = ABAS[aba].titulo;
-  $$('.aba').forEach(a => a.classList.toggle('ativa', a.dataset.aba === aba));
+  $$('.aba').forEach(a => a.classList.toggle('ativa', a.dataset.aba === (aba === 'trofeus' ? 'jogos' : aba)));
   ABAS[aba].render();
   try { window.scrollTo(0, 0); } catch (e) { /* ignora */ }
 }
@@ -1922,6 +1965,7 @@ function cardJogo(j) {
   const p = progressoJogo(j);
   const semBarra = j.meta === 'Só zerar' && !j.horasEstimadas;
   const chips = [];
+  chips.push(`<button class="chip trof" data-acao="ver-trofeus" data-id="${j.id}">${ico('trofeu')}${j.plataforma === 'Steam' ? 'Conquistas' : 'Troféus'} e guias</button>`);
   if (j.online === ONLINE[1]) chips.push(`<span class="chip aviso">⚠ Troféu online: verificar servidores</span>`);
   if (j.online === ONLINE[2]) chips.push(`<span class="chip perigo">✕ Platina impossível</span>`);
   if (j.grupo) {
@@ -1948,6 +1992,171 @@ function cardJogo(j) {
       <div class="legenda"><span>${legendaJogo(j)}</span>${htmlXpJogo(j)}</div>
       ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
     </div></article>`;
+}
+
+/* ---------- Troféus / conquistas de um jogo (tela #trofeus/<id>) ----------
+   A lista vem da PSN ou da Steam (api/trofeus) e fica guardada só neste aparelho
+   (não vai para a nuvem: são muitos dados). Guias = links de busca prontos. */
+let trofeusJogo = null, trofCarregando = false, trofErro = '';
+const filtroT = { vista: 'faltam', busca: '', revelar: false };
+const CHAVE_TROF = 'minhaEstante.trofeus.', MAX_CACHE_TROF = 20;
+const TIPO_TROF = { platinum: ['Platina', 'plat'], gold: ['Ouro', 'ouro'], silver: ['Prata', 'prata'], bronze: ['Bronze', 'bronze'] };
+const fonteTrof = j => j && j.plataforma !== 'Steam' && j.psnId ? 'psn' : j && j.steamAppId ? 'steam' : null;
+const chaveFonteTrof = j => fonteTrof(j) === 'psn' ? String(j.psnId) : String(j.steamAppId || '');
+function lerCacheTrof(j) { try { return JSON.parse(localStorage.getItem(CHAVE_TROF + j.id)); } catch (e) { return null; } }
+function gravarCacheTrof(j, d) {
+  // Guarda as listas dos últimos jogos abertos (as mais antigas saem para não lotar o aparelho)
+  let idx = [];
+  try { idx = JSON.parse(localStorage.getItem(CHAVE_TROF + 'indice')) || []; } catch (e) { /* ignora */ }
+  idx = [j.id, ...idx.filter(x => x !== j.id)];
+  const sobra = idx.splice(MAX_CACHE_TROF);
+  try {
+    sobra.forEach(id => localStorage.removeItem(CHAVE_TROF + id));
+    localStorage.setItem(CHAVE_TROF + j.id, JSON.stringify(d));
+    localStorage.setItem(CHAVE_TROF + 'indice', JSON.stringify(idx));
+  } catch (e) { // aparelho cheio: limpa todas as listas guardadas e tenta só esta
+    try { Object.keys(localStorage).filter(k => k.startsWith(CHAVE_TROF)).forEach(k => localStorage.removeItem(k)); localStorage.setItem(CHAVE_TROF + j.id, JSON.stringify(d)); } catch (e2) { /* sem espaço */ }
+  }
+}
+const rotuloRaridade = r => r == null ? '' : r <= 1 ? 'Ultra rara' : r <= 5 ? 'Muito rara' : r <= 20 ? 'Rara' : 'Comum';
+const busca = s => encodeURIComponent(s);
+// Guias do jogo inteiro (roteiro de platina / 100%)
+function guiasJogo(j) {
+  const n = j.nome;
+  if (j.plataforma === 'Steam') return [
+    ['Guias da comunidade Steam', j.steamAppId ? `https://steamcommunity.com/app/${encodeURIComponent(j.steamAppId)}/guides/` : `https://steamcommunity.com/search/?text=${busca(n)}`],
+    ['TrueSteamAchievements', `https://www.google.com/search?q=${busca(`site:truesteamachievements.com ${n} achievements guide`)}`],
+    ['Vídeos (YouTube)', `https://www.youtube.com/results?search_query=${busca(`${n} guia conquistas 100%`)}`],
+    ['Busca em português', `https://www.google.com/search?q=${busca(`${n} guia de conquistas 100%`)}`]];
+  return [
+    ['Roteiro PowerPyx', `https://www.google.com/search?q=${busca(`site:powerpyx.com ${n} trophy guide roadmap`)}`],
+    ['Guia PSNProfiles', `https://www.google.com/search?q=${busca(`site:psnprofiles.com/guide ${n}`)}`],
+    ['PlayStationTrophies', `https://www.google.com/search?q=${busca(`site:playstationtrophies.org ${n} trophy guide`)}`],
+    ['Vídeos (YouTube)', `https://www.youtube.com/results?search_query=${busca(`${n} guia de troféus platina`)}`],
+    ['Busca em português', `https://www.google.com/search?q=${busca(`${n} guia de troféus platina`)}`]];
+}
+// Guias de um troféu: busca pelo nome em inglês (onde há mais guias) e em português
+function guiasTrofeu(j, t) {
+  const steam = j.plataforma === 'Steam', en = t.nomeEn || t.nome;
+  const l = [
+    ['▶ Vídeo', `https://www.youtube.com/results?search_query=${busca(`${j.nome} ${en} ${steam ? 'achievement' : 'trophy'}`)}`],
+    ['Guia (inglês)', `https://www.google.com/search?q=${busca(`${j.nome} "${en}" ${steam ? 'achievement' : 'trophy'} guide`)}`]];
+  if (t.nome && t.nome !== en) l.push(['Guia (português)', `https://www.google.com/search?q=${busca(`${j.nome} "${t.nome}" ${steam ? 'conquista' : 'troféu'} como conseguir`)}`]);
+  return l;
+}
+const linksHtml = (lista, cls = 'link-guia') => lista.map(([r, u]) => `<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener" data-parar>${esc(r)} ↗</a>`).join('');
+
+async function carregarTrofeus(j, forcar = false) {
+  if (!j || !fonteTrof(j) || !nuvem.usuario || trofCarregando) return;
+  const cache = lerCacheTrof(j), chave = chaveFonteTrof(j);
+  if (!forcar && cache && cache.chave === chave && Date.now() - Date.parse(cache.atualizado) < 12 * 3600e3) return;
+  trofCarregando = true; trofErro = '';
+  if (abaAtual === 'trofeus') renderTrofeus(false);
+  try {
+    const url = fonteTrof(j) === 'psn'
+      ? `api/trofeus?fonte=psn&id=${encodeURIComponent(j.psnId)}&plat=${encodeURIComponent(j.plataforma)}`
+      : `api/trofeus?fonte=steam&appid=${encodeURIComponent(j.steamAppId)}`;
+    const d = await chamarApi(url);
+    d.chave = chave;
+    gravarCacheTrof(j, d);
+    if (forcar) toast('Lista de troféus atualizada.');
+  } catch (e) { trofErro = e.message || 'Não consegui buscar os troféus agora.'; }
+  finally {
+    trofCarregando = false;
+    if (abaAtual === 'trofeus' && trofeusJogo === j.id) renderTrofeus(false);
+  }
+}
+function itemTrofeu(j, t) {
+  const escondido = t.oculto && !t.ganho && !filtroT.revelar;
+  const [rot, cls] = t.tipo ? TIPO_TROF[t.tipo] : ['Conquista', 'conq'];
+  const nomeOculto = j.plataforma === 'Steam' ? 'Conquista secreta' : 'Troféu oculto';
+  const desc = escondido ? `${nomeOculto}. Toque em “Mostrar ocultos” para ver (pode ter spoiler).`
+    : t.descricao || (t.oculto ? 'Conquista secreta: a loja não mostra a descrição. Use os guias abaixo.' : 'Sem descrição.');
+  return `<li class="trofeu${t.ganho ? ' ganho' : ''}">
+    ${t.icone && !escondido ? `<img class="trofeu-ico" src="${esc(t.icone)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : `<span class="trofeu-ico vazio">${ico(t.oculto ? 'cadeado' : 'trofeu')}</span>`}
+    <div class="trofeu-corpo">
+      <div class="trofeu-topo"><b>${esc(escondido ? nomeOculto : t.nome)}</b><span class="tipo-trof t-${cls}">${rot}</span></div>
+      <p class="trofeu-desc">${esc(desc)}</p>
+      ${t.alvo && !t.ganho ? `<p class="trofeu-desc">Progresso necessário: ${esc(t.alvo)}</p>` : ''}
+      <div class="trofeu-meta">${t.ganho ? `<span class="ok-txt">✓ Conquistado${t.data ? ` em ${fmtData(t.data)}` : ''}</span>` : '<span>Falta</span>'}
+        ${t.raridade != null ? `<span>${fmtNum(t.raridade)}% dos jogadores · ${rotuloRaridade(t.raridade)}</span>` : ''}</div>
+      ${t.ganho ? '' : `<details class="como"><summary>Como conseguir</summary><div class="links-guia">${linksHtml(guiasTrofeu(j, escondido ? { nome: '', nomeEn: t.nomeEn } : t))}</div></details>`}
+    </div></li>`;
+}
+function renderTrofeus(buscar = true) {
+  const j = acharJogo(trofeusJogo);
+  if (!j) { $('#conteudo').innerHTML = '<div class="vazio">Jogo não encontrado. <a href="#jogos">Voltar para Jogos</a></div>'; return; }
+  const steam = j.plataforma === 'Steam', palavra = steam ? 'conquistas' : 'troféus';
+  const fonte = fonteTrof(j), d = lerCacheTrof(j), valido = d && d.chave === chaveFonteTrof(j) ? d : null;
+  const lista = valido ? valido.trofeus : [];
+  const pct = valido && valido.total ? Math.round(valido.ganhos / valido.total * 100) : 0;
+  const tipos = valido ? ['platinum', 'gold', 'silver', 'bronze'].filter(t => valido.porTipo[t]) : [];
+  // Filtro, busca e ordem
+  const b = norm(filtroT.busca);
+  const filtrados = lista.filter(t => (filtroT.vista === 'todos' || (filtroT.vista === 'faltam' ? !t.ganho : t.ganho))
+    && (!b || norm(`${t.nome} ${t.nomeEn} ${(t.oculto && !t.ganho && !filtroT.revelar) ? '' : t.descricao}`).includes(b)));
+  if (filtroT.vista === 'faltam') filtrados.sort((x, y) => (y.raridade ?? -1) - (x.raridade ?? -1)); // mais fáceis primeiro
+  if (filtroT.vista === 'conquistados') filtrados.sort((x, y) => (y.data || '').localeCompare(x.data || ''));
+  // Agrupa por DLC quando houver
+  const grupos = valido && valido.grupos && valido.grupos.length > 1 ? valido.grupos : null;
+  const nomeGrupo = id => { const g = grupos && grupos.find(x => x.id === id); return id === 'default' ? 'Jogo base' : g ? `DLC: ${g.nome}` : `DLC ${id}`; };
+  let corpoLista = '';
+  if (grupos) {
+    for (const g of grupos) {
+      const itens = filtrados.filter(t => t.grupo === g.id);
+      if (itens.length) corpoLista += `<h3 class="grupo-trof">${esc(nomeGrupo(g.id))} <small>${lista.filter(t => t.grupo === g.id && t.ganho).length}/${lista.filter(t => t.grupo === g.id).length}</small></h3><ul class="lista-trof">${itens.map(t => itemTrofeu(j, t)).join('')}</ul>`;
+    }
+  } else if (filtrados.length) corpoLista = `<ul class="lista-trof">${filtrados.map(t => itemTrofeu(j, t)).join('')}</ul>`;
+
+  let estado = '';
+  if (!fonte) estado = `<div class="alerta">Este jogo ainda não está ligado à ${steam ? 'Steam' : 'PSN'}, por isso não tenho a lista de ${palavra}. ${nuvem.usuario ? `Use <b>Jogos → Steam / PSN</b> e vincule este jogo na revisão.` : 'Entre na sua conta e sincronize com a Steam/PSN.'} Os guias abaixo já funcionam.</div>`;
+  else if (!nuvem.usuario && !valido) estado = '<div class="alerta">Entre na sua conta para buscar a lista de troféus.</div>';
+  else if (trofCarregando && !valido) estado = `<div class="carregando">Buscando os ${palavra} na ${fonte === 'psn' ? 'PSN' : 'Steam'}…</div>`;
+  if (trofErro) estado += `<div class="alerta">${esc(trofErro)}</div>`;
+  if (valido && valido.aviso) estado += `<div class="alerta">${esc(valido.aviso)}</div>`;
+  if (valido && valido.semConquistas) estado += `<div class="vazio">Este jogo não tem conquistas na Steam.</div>`;
+
+  $('#conteudo').innerHTML = `
+    <div class="acoes-linha">
+      <button class="btn" data-acao="voltar-jogos">← Jogos</button>
+      ${fonte && nuvem.usuario ? `<button class="btn" data-acao="atualizar-trofeus" ${trofCarregando ? 'disabled' : ''}>${ico('sync')}${trofCarregando ? 'Atualizando…' : 'Atualizar'}</button>` : ''}
+      <button class="btn" data-acao="editar-jogo" data-id="${j.id}">Editar jogo</button>
+    </div>
+    <section class="bloco trof-cab">
+      ${capaJogo(j)}
+      <div class="trof-info">
+        <h2 class="trof-nome">${esc(j.nome)}</h2>
+        ${valido && valido.total ? `<div class="trof-num"><b>${valido.ganhos}</b> de ${valido.total} ${palavra} · ${pct}%</div>
+          <span class="barra"><i style="width:${pct}%"></i></span>
+          ${tipos.length ? `<div class="trof-tipos">${tipos.map(t => `<span class="t-${TIPO_TROF[t][1]}">${ico('trofeu')}${TIPO_TROF[t][0]} <b>${valido.porTipo[t].ganhos}/${valido.porTipo[t].total}</b></span>`).join('')}</div>` : ''}
+          <small class="ajuda">Lista de ${new Date(valido.atualizado).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}${trofCarregando ? ' · atualizando…' : ''}</small>`
+        : `<div class="trof-num">${esc(j.plataforma)} · ${j.progresso || 0}% (da última sincronização)</div>`}
+      </div>
+    </section>
+    <section class="bloco"><h2>Guias para ${steam ? 'o 100%' : 'a platina'}</h2>
+      <p class="ajuda" style="margin-bottom:10px">Roteiros completos, passo a passo, feitos pela comunidade. Abrem em outra aba.</p>
+      <div class="links-guia">${linksHtml(guiasJogo(j))}</div>
+    </section>
+    ${estado}
+    ${valido && valido.total ? `
+      <div class="segmentado tres">
+        <button data-acao="vista-trof" data-v="faltam" class="${filtroT.vista === 'faltam' ? 'ativo' : ''}">Faltam (${valido.total - valido.ganhos})</button>
+        <button data-acao="vista-trof" data-v="conquistados" class="${filtroT.vista === 'conquistados' ? 'ativo' : ''}">Pegos (${valido.ganhos})</button>
+        <button data-acao="vista-trof" data-v="todos" class="${filtroT.vista === 'todos' ? 'ativo' : ''}">Todos (${valido.total})</button>
+      </div>
+      <div class="busca-linha">
+        <input type="search" id="buscaTrof" placeholder="Buscar ${palavra}…" value="${esc(filtroT.busca)}" autocomplete="off">
+        ${lista.some(t => t.oculto && !t.ganho) ? `<button class="btn" data-acao="revelar-ocultos">${filtroT.revelar ? 'Esconder ocultos' : 'Mostrar ocultos'}</button>` : ''}
+      </div>
+      ${filtroT.vista === 'faltam' ? '<p class="ajuda" style="margin:0 2px 10px">Ordenados do mais comum (mais fácil) para o mais raro.</p>' : ''}
+      ${corpoLista || `<div class="vazio">${filtroT.vista === 'faltam' ? `Nenhum ${steam ? 'faltando' : 'troféu faltando'}. Parabéns! 🏆` : 'Nada encontrado.'}</div>`}` : ''}`;
+  const caixa = $('#buscaTrof');
+  if (caixa) caixa.addEventListener('input', () => {
+    filtroT.busca = caixa.value;
+    const pos = caixa.selectionStart; renderTrofeus(false);
+    const c2 = $('#buscaTrof'); if (c2) { c2.focus(); try { c2.setSelectionRange(pos, pos); } catch (e) { /* ignora */ } }
+  });
+  if (buscar) carregarTrofeus(j);
 }
 
 /* ---------- Lista de desejos ---------- */
@@ -2171,6 +2380,7 @@ function formJogo(id) {
   const outros = state.jogos.filter(x => x.id !== j.id).sort(porNome);
   const dupAtual = j.grupo ? outros.find(x => x.grupo === j.grupo) : null;
   const html = `<form class="form" id="fJogo" novalidate>
+    ${novo ? '' : `<button class="btn cheio" type="button" data-acao="ver-trofeus" data-id="${j.id}">${ico('trofeu')}${j.plataforma === 'Steam' ? 'Conquistas' : 'Troféus'} e guias</button>`}
     ${campo('Nome', `<input name="nome" required value="${esc(j.nome)}" autocomplete="off">`)}
     <div class="g2">
       ${campo('Plataforma', sel('plataforma', PLATAFORMAS, j.plataforma))}
@@ -3335,6 +3545,12 @@ const ACOES = {
   'sync-agora': async () => { fecharSheet(); if (lerMeta().pendente) await enviar(); else await sincronizar(false); toast(nuvem.estado === 'ok' ? 'Tudo sincronizado.' : 'Não foi possível sincronizar agora.', nuvem.estado === 'ok' ? '' : 'aviso'); },
   'sair': () => sairDaConta(),
   'abrir-sync': () => menuSync(),
+  // Troféus de um jogo
+  'ver-trofeus': el => { fecharSheet(); filtroT.vista = 'faltam'; filtroT.revelar = false; trofErro = ''; location.hash = 'trofeus/' + encodeURIComponent(el.dataset.id); },
+  'voltar-jogos': () => { location.hash = 'jogos'; },
+  'atualizar-trofeus': () => carregarTrofeus(acharJogo(trofeusJogo), true),
+  'vista-trof': el => { filtroT.vista = el.dataset.v; renderTrofeus(false); },
+  'revelar-ocultos': () => { filtroT.revelar = !filtroT.revelar; renderTrofeus(false); },
   // Lista de desejos
   'vista-jogos': el => { filtroJ.vista = el.dataset.v; renderJogos(); },
   'novo-desejo': () => formDesejo(null),

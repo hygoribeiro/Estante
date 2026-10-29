@@ -2,36 +2,12 @@
 // Variáveis na Vercel: STEAM_API_KEY (steamcommunity.com/dev/apikey) e STEAM_ID
 // (número de 17 dígitos ou o nome personalizado do perfil).
 import { verificarUsuario, responderErro, ErroHttp, emLotes } from './_comum.js';
-
-const BASE = 'https://api.steampowered.com';
-
-async function pegarJson(url, ms = 9000) {
-  const ctl = new AbortController();
-  const t = setTimeout(() => ctl.abort(), ms);
-  try {
-    const r = await fetch(url, { signal: ctl.signal });
-    if (!r.ok) return { __status: r.status };
-    return await r.json();
-  } catch (e) { return { __status: 0 }; }
-  finally { clearTimeout(t); }
-}
+import { BASE, pegarJson, credenciaisSteam } from './_steam.js';
 
 export default async function handler(req, res) {
   try {
     await verificarUsuario(req);
-    const chave = (process.env.STEAM_API_KEY || '').trim();
-    const id = (process.env.STEAM_ID || '').trim();
-    if (!chave || !id) throw new ErroHttp(400, 'Steam não configurada: faltam STEAM_API_KEY e/ou STEAM_ID na Vercel.');
-    const k = encodeURIComponent(chave);
-
-    // Converte nome personalizado do perfil em SteamID64
-    let steamid = id;
-    if (!/^\d{17}$/.test(id)) {
-      const v = await pegarJson(`${BASE}/ISteamUser/ResolveVanityURL/v1/?key=${k}&vanityurl=${encodeURIComponent(id)}`);
-      if (v.__status === 401 || v.__status === 403) throw new ErroHttp(400, 'A chave STEAM_API_KEY foi recusada pela Steam.');
-      if (!v.response || v.response.success !== 1) throw new ErroHttp(400, 'Não encontrei esse STEAM_ID. Use o número de 17 dígitos do seu perfil.');
-      steamid = v.response.steamid;
-    }
+    const { k, steamid } = await credenciaisSteam();
 
     const dono = await pegarJson(`${BASE}/IPlayerService/GetOwnedGames/v1/?key=${k}&steamid=${steamid}&include_appinfo=1&include_played_free_games=1&format=json`);
     if (dono.__status === 401 || dono.__status === 403) throw new ErroHttp(400, 'A chave STEAM_API_KEY foi recusada pela Steam.');

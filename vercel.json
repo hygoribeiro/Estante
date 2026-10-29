@@ -6,6 +6,9 @@
     "api/psn.js": {
       "maxDuration": 60
     },
+    "api/trofeus.js": {
+      "maxDuration": 30
+    },
     "api/lembrete.js": {
       "maxDuration": 30
     }
