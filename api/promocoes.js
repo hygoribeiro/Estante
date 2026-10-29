@@ -10,11 +10,13 @@
 // (por isso a parte do IsThereAnyDeal só aponta para as lojas e para o próprio IsThereAnyDeal).
 import { verificarUsuario, responderErro, ErroHttp } from './_comum.js';
 
-async function pegarJson(url, ms = 10000) {
+async function pegarJson(url, ms = 10000, corpoPost = null) {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), ms);
   try {
-    const r = await fetch(url, { signal: ctl.signal, headers: { 'Accept-Language': 'pt-BR' } });
+    const op = { signal: ctl.signal, headers: { 'Accept-Language': 'pt-BR' } };
+    if (corpoPost) { op.method = 'POST'; op.headers['Content-Type'] = 'application/json'; op.body = JSON.stringify(corpoPost); }
+    const r = await fetch(url, op);
     const corpo = await r.json().catch(() => null);
     return { status: r.status, corpo };
   } catch (e) { return { status: 0, corpo: null }; }
@@ -83,17 +85,26 @@ const LISTAS_ITAD = {
   descontos: { sort: '-cut', limit: 80 },        // maiores descontos
   minimas: { sort: '-time', limit: 200, soMinimas: true } // recentes que estão no menor preço da história
 };
-async function ofertasItad(lista) {
+const ITAD = 'https://api.isthereanydeal.com';
+const valor = p => p && typeof p.amount === 'number' ? Math.round(p.amount * 100) / 100 : null;
+function chaveItad() {
   const chave = (process.env.ITAD_API_KEY || '').trim();
   if (!chave) throw new ErroHttp(400, 'IsThereAnyDeal não configurado: falta ITAD_API_KEY na Vercel.');
-  const cfg = LISTAS_ITAD[lista];
-  if (!cfg) throw new ErroHttp(400, 'Lista desconhecida.');
-  const { status, corpo } = await pegarJson(`https://api.isthereanydeal.com/deals/v2?key=${encodeURIComponent(chave)}&country=BR&limit=${cfg.limit}&sort=${encodeURIComponent(cfg.sort)}`);
+  return encodeURIComponent(chave);
+}
+// Erros do IsThereAnyDeal em português (ok = formato esperado da resposta)
+function conferirItad(status, corpo, ok) {
   const msg = String((corpo && (corpo.reason_phrase || corpo.error || corpo.message)) || '');
   if (status === 401 || status === 403) throw new ErroHttp(400, `O IsThereAnyDeal recusou a chave ITAD_API_KEY${msg ? ` ("${msg.slice(0, 80)}")` : ''}. Confira a chave na Vercel e faça Redeploy.`);
   if (status === 429) throw new ErroHttp(429, 'O IsThereAnyDeal pediu para esperar um pouco (limite de consultas). Tente de novo em alguns minutos.');
-  if (status !== 200 || !corpo || !Array.isArray(corpo.list)) throw new ErroHttp(502, `O IsThereAnyDeal não respondeu agora${msg ? ` ("${msg.slice(0, 80)}")` : ''}. Tente de novo em alguns minutos.`);
-  const valor = p => p && typeof p.amount === 'number' ? Math.round(p.amount * 100) / 100 : null;
+  if (status !== 200 || !ok) throw new ErroHttp(502, `O IsThereAnyDeal não respondeu agora${msg ? ` ("${msg.slice(0, 80)}")` : ''}. Tente de novo em alguns minutos.`);
+}
+async function ofertasItad(lista) {
+  const k = chaveItad();
+  const cfg = LISTAS_ITAD[lista];
+  if (!cfg) throw new ErroHttp(400, 'Lista desconhecida.');
+  const { status, corpo } = await pegarJson(`${ITAD}/deals/v2?key=${k}&country=BR&limit=${cfg.limit}&sort=${encodeURIComponent(cfg.sort)}`);
+  conferirItad(status, corpo, corpo && Array.isArray(corpo.list));
   let itens = corpo.list.filter(x => x && x.deal && x.deal.price).map(x => {
     const d = x.deal, a = x.assets || {};
     const preco = valor(d.price), menor = valor(d.historyLow);
@@ -111,6 +122,32 @@ async function ofertasItad(lista) {
   return itens;
 }
 
+// Pesquisa por nome: acha os jogos e traz o preço atual em todas as lojas de PC (em reais)
+async function buscarItad(termo) {
+  const k = chaveItad();
+  const busca = await pegarJson(`${ITAD}/games/search/v1?key=${k}&title=${encodeURIComponent(termo)}&results=12`);
+  conferirItad(busca.status, busca.corpo, Array.isArray(busca.corpo));
+  const jogos = busca.corpo.filter(g => g && g.id && !g.mature).slice(0, 12);
+  if (!jogos.length) return [];
+  const precos = await pegarJson(`${ITAD}/games/prices/v3?key=${k}&country=BR&vouchers=true`, 12000, jogos.map(g => g.id));
+  conferirItad(precos.status, precos.corpo, Array.isArray(precos.corpo));
+  const porId = new Map(precos.corpo.map(p => [p.id, p]));
+  return jogos.map(g => {
+    const p = porId.get(g.id) || {}, a = g.assets || {}, h = p.historyLow || {};
+    const ofertas = (p.deals || []).filter(d => d && d.price).map(d => ({
+      loja: (d.shop && d.shop.name) || '', preco: valor(d.price), original: valor(d.regular), desconto: d.cut || 0,
+      menorLoja: valor(d.storeLow), voucher: d.voucher || '', drm: (d.drm || []).map(z => z.name).filter(Boolean),
+      expira: d.expiry || '', url: d.url || ''
+    })).sort((x, y) => x.preco - y.preco);
+    return {
+      id: g.id, titulo: g.title || '', tipo: g.type || '',
+      capa: a.banner400 || a.banner300 || a.banner600 || a.boxart || '',
+      pagina: g.slug ? `https://isthereanydeal.com/game/${encodeURIComponent(g.slug)}/info/` : 'https://isthereanydeal.com/',
+      menorHistoria: valor(h.all), menor1Ano: valor(h.y1), ofertas
+    };
+  });
+}
+
 export default async function handler(req, res) {
   try {
     await verificarUsuario(req);
@@ -123,6 +160,11 @@ export default async function handler(req, res) {
       return res.status(200).json({ itens: await precosGgDeals(ids), atualizado: new Date().toISOString() });
     }
     if (q.tipo === 'itad') return res.status(200).json({ itens: await ofertasItad(String(q.lista || 'novas')), atualizado: new Date().toISOString() });
-    throw new ErroHttp(400, 'Informe tipo=steam, tipo=ggdeals ou tipo=itad.');
+    if (q.tipo === 'busca') {
+      const termo = String(q.q || '').trim().slice(0, 80);
+      if (termo.length < 2) throw new ErroHttp(400, 'Digite pelo menos 2 letras do nome do jogo.');
+      return res.status(200).json({ itens: await buscarItad(termo) });
+    }
+    throw new ErroHttp(400, 'Informe tipo=steam, tipo=ggdeals, tipo=itad ou tipo=busca.');
   } catch (e) { responderErro(res, e); }
 }

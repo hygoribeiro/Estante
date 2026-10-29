@@ -98,4 +98,5 @@ Quando a sincronização da PSN avisar que o NPSSO expirou: gere um novo (passo 
   Uso pessoal; a GG.deals pede crédito com link onde os preços aparecem (o app já mostra).
 - **Ofertas de todas as lojas de PC** (IsThereAnyDeal, API oficial): Novas ofertas, Maiores descontos e Mínimas históricas, em reais.
   Precisa da chave gratuita: crie conta em isthereanydeal.com, confirme o e-mail, registre um app em isthereanydeal.com/apps/my/ e adicione na Vercel como `ITAD_API_KEY` (depois **Redeploy**). Termos: uso pessoal, com link para o IsThereAnyDeal; os links das lojas não são alterados.
+- **Pesquisar promoção** (topo da aba): digite o nome do jogo e veja o preço em todas as lojas de PC agora, o menor da história e o do último ano (IsThereAnyDeal).
 - O botão **Abrir GG.deals** leva ao site, que também mostra ofertas de PlayStation e Xbox.

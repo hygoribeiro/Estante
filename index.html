@@ -570,6 +570,16 @@ a.btn.pri{color:var(--pri-txt)}
 .promo-grade{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .promo-card{display:flex;flex-direction:column;background:var(--card2);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden}
 .promo-card img{display:block;width:100%;aspect-ratio:460/215;object-fit:cover;background:var(--card)}
+.lista-busca{display:grid;gap:10px}
+.busca-res{display:grid;grid-template-columns:1fr;background:var(--card2);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden}
+.busca-res>img,.busca-res>.promo-sem-capa{display:block;width:100%;aspect-ratio:460/215;object-fit:cover;background:var(--card)}
+@media (min-width:700px){.busca-res{grid-template-columns:260px 1fr}.busca-res>img,.busca-res>.promo-sem-capa{height:100%;min-height:122px}}
+.lojas-busca{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:2px}
+.lojas-busca li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid var(--borda);font-size:13.5px}
+.lojas-busca li:first-child{border-top:0}
+.lojas-busca small{color:var(--txt3)}
+.lojas-busca a{color:var(--pri);font-weight:650;text-decoration:none;white-space:nowrap}
+.t-desc{color:var(--magenta)}
 .promo-sem-capa{aspect-ratio:460/215;background:linear-gradient(160deg,var(--card),var(--card2))}
 .promo-corpo{padding:10px 12px 12px;display:grid;gap:6px}
 .promo-corpo h3{font-size:15px;margin:0;line-height:1.3}
@@ -2124,6 +2134,76 @@ function htmlItad(c) {
     <p class="credito-gg">Ofertas: <a href="https://isthereanydeal.com/deals/" target="_blank" rel="noopener">IsThereAnyDeal</a> (API oficial), preços em reais${c['itadEm_' + lista] ? ` · atualizado ${new Date(c['itadEm_' + lista]).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}. Só lojas de PC.</p>
     ${itadErro ? `<div class="alerta">${esc(itadErro)}</div>` : ''}`;
 }
+/* Pesquisar promoção por nome (IsThereAnyDeal: busca + preços em todas as lojas de PC) */
+const buscaPromo = { termo: '', itens: null, carregando: false, erro: '' };
+async function pesquisarPromo(termo) {
+  termo = String(termo || '').trim();
+  if (termo.length < 2) { toast('Digite pelo menos 2 letras do nome do jogo.', 'erro'); return; }
+  if (!nuvem.usuario) { mostrarLogin(); return; }
+  Object.assign(buscaPromo, { termo, carregando: true, erro: '' });
+  renderPromocoes(false);
+  try { buscaPromo.itens = (await chamarApi('api/promocoes?tipo=busca&q=' + encodeURIComponent(termo))).itens || []; }
+  catch (e) { buscaPromo.erro = e.message; buscaPromo.itens = null; }
+  finally { buscaPromo.carregando = false; if (abaAtual === 'promocoes') renderPromocoes(false); }
+}
+function resultadoBusca(g) {
+  const of = g.ofertas || [], melhor = of[0];
+  const emPromo = of.some(o => o.desconto > 0);
+  const recorde = melhor && g.menorHistoria != null && melhor.preco <= g.menorHistoria;
+  const naLista = state.desejos.some(d => norm(d.nome) === norm(g.titulo));
+  const tenho = state.jogos.some(j => norm(j.nome) === norm(g.titulo));
+  return `<article class="busca-res">
+    ${g.capa ? `<img src="${esc(g.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<div class="promo-sem-capa"></div>'}
+    <div class="promo-corpo">
+      <h3>${esc(g.titulo)}${g.tipo && g.tipo !== 'game' ? ` <span class="chip">${g.tipo === 'dlc' ? 'DLC' : esc(g.tipo)}</span>` : ''}</h3>
+      ${melhor ? `
+        <div class="promo-precos">${melhor.desconto ? `<span class="selo-desc">−${melhor.desconto}%</span>` : ''}${melhor.original > melhor.preco ? `<span class="riscado">${brl(melhor.original)}</span>` : ''}
+          <span class="preco-grande">${brl(melhor.preco)}</span><span class="ajuda">na ${esc(melhor.loja)}</span></div>
+        <div class="chips" style="margin:0">${recorde ? '<span class="chip promo">🔥 Menor preço da história</span>' : ''}
+          ${emPromo ? '<span class="chip ok">Em promoção</span>' : '<span class="chip">Sem promoção agora</span>'}
+          ${melhor.voucher ? `<span class="chip ok">Cupom: ${esc(melhor.voucher)}</span>` : ''}</div>
+        <div class="trofeu-meta">${g.menorHistoria != null ? `<span>Menor da história: ${brl(g.menorHistoria)}</span>` : ''}${g.menor1Ano != null ? `<span>no último ano: ${brl(g.menor1Ano)}</span>` : ''}</div>
+        ${of.length > 1 ? `<details class="como"><summary>Ver todas as lojas (${of.length})</summary><ul class="lojas-busca">${of.map(o => `<li>
+          <span>${esc(o.loja)}${o.drm.length ? `<small> · ativa na ${esc(o.drm.join(' / '))}</small>` : ''}${o.voucher ? `<small> · cupom ${esc(o.voucher)}</small>` : ''}</span>
+          <span>${o.desconto ? `<b class="t-desc">−${o.desconto}%</b> ` : ''}<b>${brl(o.preco)}</b>${o.url ? ` <a href="${esc(o.url)}" target="_blank" rel="noopener">Ir ↗</a>` : ''}</span></li>`).join('')}</ul></details>` : ''}`
+      : '<p class="ajuda">Nenhuma loja de PC está vendendo este jogo agora no Brasil.</p>'}
+      <div class="promo-acoes">
+        ${melhor && melhor.url ? `<a class="link-guia" href="${esc(melhor.url)}" target="_blank" rel="noopener">Ver na ${esc(melhor.loja)} ↗</a>` : ''}
+        <a class="link-guia" href="${esc(g.pagina)}" target="_blank" rel="noopener">Histórico de preços ↗</a>
+        ${tenho ? '<span class="chip ok">Você já tem</span>' : naLista ? '<span class="chip ok">Na lista ✓</span>'
+          : `<button class="btn mini" data-acao="busca-desejo" data-id="${esc(g.id)}">${ico('mais')}Desejos</button>`}
+      </div>
+    </div></article>`;
+}
+function htmlBuscaPromo() {
+  const b = buscaPromo;
+  let corpo = '';
+  if (!nuvem.usuario) corpo = '<p class="ajuda">Entre na sua conta para pesquisar promoções.</p>';
+  else if (!nuvem.integracoes.itad) corpo = '<p class="ajuda">Para pesquisar aqui, ligue o IsThereAnyDeal (veja a seção “Ofertas de todas as lojas de PC”).</p>';
+  else if (b.carregando) corpo = `<div class="carregando">Procurando “${esc(b.termo)}” nas lojas…</div>`;
+  else if (b.erro) corpo = `<div class="alerta">${esc(b.erro)}</div>`;
+  else if (b.itens && !b.itens.length) corpo = `<div class="vazio">Nada encontrado para “${esc(b.termo)}”. Tente outro nome (em inglês costuma funcionar melhor).</div>`;
+  else if (b.itens) corpo = `<div class="lista-busca">${b.itens.map(resultadoBusca).join('')}</div>
+    <p class="credito-gg">Preços em reais: <a href="https://isthereanydeal.com" target="_blank" rel="noopener">IsThereAnyDeal</a> (API oficial). Só lojas de PC.
+      <button class="btn link" data-acao="limpar-busca-promo" style="min-height:0;padding:0 4px">Limpar pesquisa</button></p>`;
+  return `<form class="busca-linha" id="formBuscaPromo" autocomplete="off">
+      <input type="search" id="termoPromo" placeholder="Nome do jogo… (ex.: Elden Ring)" value="${esc(b.termo)}" enterkeyhint="search">
+      <button class="btn pri" type="submit" ${b.carregando ? 'disabled' : ''}>Pesquisar</button>
+    </form>
+    <p class="ajuda" style="margin:-4px 2px 10px">Mostra o preço do jogo em todas as lojas de PC agora. Jogos de PlayStation e Xbox:
+      <a href="https://gg.deals/br/search/?title=${encodeURIComponent(b.termo)}" target="_blank" rel="noopener">pesquisar no site da GG.deals ↗</a></p>
+    ${corpo}`;
+}
+function buscaParaDesejo(id) {
+  const g = (buscaPromo.itens || []).find(x => x.id === id); if (!g) return;
+  if (state.desejos.some(d => norm(d.nome) === norm(g.titulo))) { toast('Já está na sua lista de desejos.'); return; }
+  const melhor = (g.ofertas || [])[0];
+  const d = Object.assign(desejoPadrao(), { nome: g.titulo, plataforma: 'Steam', link: (melhor && melhor.url) || g.pagina });
+  if (melhor) definirPreco(d, { atual: melhor.preco, original: melhor.original ?? melhor.preco, desconto: melhor.desconto });
+  state.desejos.push(d);
+  salvar(); renderPromocoes(false); toast(`${g.titulo} foi para a lista de desejos.`);
+}
+
 function itadParaDesejo(id) {
   const c = lerPromo();
   const o = LISTAS_ITAD.flatMap(([v]) => c['itad_' + v] || []).find(x => x.id === id); if (!o) return;
@@ -2157,6 +2237,7 @@ function renderPromocoes(buscar = true) {
       ${nuvem.usuario ? `<button class="btn" data-acao="atualizar-promos" ${promoCarregando || ggCarregando ? 'disabled' : ''}>${ico('sync')}${promoCarregando || ggCarregando ? 'Atualizando…' : 'Atualizar'}</button>` : ''}
     </div>
     <p class="ajuda" style="margin:0 2px 12px">Aqui ficam o melhor preço dos seus desejos, as ofertas das lojas de PC e as promoções em destaque da Steam. O botão acima abre o site da GG.deals, que também mostra ofertas de PlayStation e Xbox.</p>
+    <section class="bloco" id="blocoBuscaPromo"><h2>Pesquisar promoção</h2>${htmlBuscaPromo()}</section>
     <section class="bloco"><h2>Sua lista de desejos na GG.deals</h2>${htmlGgDesejos(c)}${ggErro ? `<div class="alerta">${esc(ggErro)}</div>` : ''}</section>
     <section class="bloco"><h2>Ofertas de todas as lojas de PC</h2>${htmlItad(c)}</section>
     <section class="bloco"><h2>Promoções em destaque na Steam</h2>
@@ -2169,6 +2250,8 @@ function renderPromocoes(buscar = true) {
     </section>`;
   const s = $('#promoMin'); if (s) s.addEventListener('change', () => { filtroP.min = Number(s.value); renderPromocoes(false); });
   const dlc = $('#itadDlc'); if (dlc) dlc.addEventListener('change', () => { filtroP.dlc = dlc.checked; renderPromocoes(false); });
+  const fb = $('#formBuscaPromo');
+  if (fb) fb.addEventListener('submit', e => { e.preventDefault(); const t = $('#termoPromo'); if (t) t.blur(); pesquisarPromo(t ? t.value : ''); });
   if (buscar) carregarPromocoes();
 }
 function promoParaDesejo(appid) {
@@ -3768,6 +3851,8 @@ const ACOES = {
   'promo-desejo': el => promoParaDesejo(el.dataset.appid),
   'itad-desejo': el => itadParaDesejo(el.dataset.id),
   'lista-itad': el => { filtroP.itad = el.dataset.v; renderPromocoes(false); carregarPromocoes(); },
+  'busca-desejo': el => buscaParaDesejo(el.dataset.id),
+  'limpar-busca-promo': () => { Object.assign(buscaPromo, { termo: '', itens: null, erro: '' }); renderPromocoes(false); },
   // Troféus de um jogo
   'ver-trofeus': el => { fecharSheet(); filtroT.vista = 'faltam'; filtroT.revelar = false; trofErro = ''; location.hash = 'trofeus/' + encodeURIComponent(el.dataset.id); },
   'voltar-jogos': () => { location.hash = 'jogos'; },
