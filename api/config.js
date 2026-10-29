@@ -7,7 +7,8 @@ export default function handler(req, res) {
     supabaseAnonKey: process.env.SUPABASE_ANON_KEY || '',
     integracoes: {
       steam: !!(process.env.STEAM_API_KEY && process.env.STEAM_ID),
-      psn: !!process.env.PSN_NPSSO
+      psn: !!process.env.PSN_NPSSO,
+      ggdeals: !!process.env.GGDEALS_API_KEY
     },
     // Lembrete diário: a chave pública VAPID também é pública por natureza
     lembrete: {

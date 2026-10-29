@@ -70,7 +70,8 @@ main{max-width:760px;margin:0 auto;padding:16px 16px calc(var(--nav-h) + 28px + 
 
 /* Navegação: barra inferior no celular, trilho no tablet, menu lateral no PC */
 .abas{position:fixed;left:0;right:0;bottom:0;z-index:30;background:color-mix(in srgb,var(--bg2) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--borda);padding-bottom:env(safe-area-inset-bottom)}
-.abas-int{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);height:var(--nav-h)}
+.abas-int{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);height:var(--nav-h)}
+@media (max-width:400px){.aba{font-size:10.5px!important;letter-spacing:-.01em}}
 .abas-marca{display:none}
 .aba{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--txt3);font-size:11.5px;font-weight:600;transition:color .15s,background .15s;border-radius:12px}
 .aba svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
@@ -563,6 +564,27 @@ a.icone-btn{color:var(--txt)}
 .resultados-steam img{width:34px;height:46px;object-fit:cover;border-radius:6px;flex:none;background:var(--card2)}
 .resultados-steam small{display:block;color:var(--txt2);font-size:12px;font-weight:500}
 
+/* Promoções */
+a.btn{text-decoration:none;color:inherit}
+a.btn.pri{color:var(--pri-txt)}
+.promo-grade{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.promo-card{display:flex;flex-direction:column;background:var(--card2);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden}
+.promo-card img{display:block;width:100%;aspect-ratio:460/215;object-fit:cover;background:var(--card)}
+.promo-corpo{padding:10px 12px 12px;display:grid;gap:6px}
+.promo-corpo h3{font-size:15px;margin:0;line-height:1.3}
+.promo-precos{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.selo-desc{background:var(--magenta);color:#fff;font:800 14px var(--fonte-d);padding:2px 8px;border-radius:6px}
+.promo-acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:2px}
+.gg-item{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:12px 0;border-top:1px solid var(--borda)}
+.gg-item:first-of-type{border-top:0;padding-top:4px}
+.gg-info{min-width:0;display:grid;gap:4px}
+.gg-topo{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.gg-topo b{font-size:15px;margin-right:4px}
+.gg-linha{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--txt2)}
+.gg-linha b{color:var(--txt);font-family:var(--fonte-d)}
+.credito-gg{font-size:12px;color:var(--txt3);margin:10px 0 0}
+.credito-gg a{color:var(--txt2)}
+
 /* Troféus de um jogo */
 .chip.trof{display:inline-flex;align-items:center;gap:4px;color:var(--ouro);border-color:color-mix(in srgb,var(--ouro) 40%,var(--borda));cursor:pointer}
 .chip.trof .ico{width:13px;height:13px}
@@ -634,6 +656,7 @@ a.icone-btn{color:var(--txt)}
     <a class="aba" href="#painel" data-aba="painel"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg>Painel</a>
     <a class="aba" href="#jogos" data-aba="jogos"><svg viewBox="0 0 24 24"><path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 15h-4l-1 .6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16.5" cy="11.5" r=".6"/><circle cx="18" cy="13.5" r=".6"/></svg>Jogos</a>
     <a class="aba" href="#livros" data-aba="livros"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h5v17H6a2 2 0 0 0-2 1V5z"/><path d="M20 5a2 2 0 0 0-2-2h-5v17h5a2 2 0 0 1 2 1V5z"/></svg>Livros</a>
+    <a class="aba" href="#promocoes" data-aba="promocoes"><svg viewBox="0 0 24 24"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>Promoções</a>
     <a class="aba" href="#missoes" data-aba="missoes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>Missões</a>
     <a class="aba" href="#perfil" data-aba="perfil"><svg viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Perfil</a>
     <a class="aba" href="#config" data-aba="config"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</a>
@@ -924,6 +947,7 @@ const ABAS = {
   missoes: { titulo: 'Missões', render: () => renderMissoes() },
   perfil: { titulo: 'Perfil', render: () => renderPerfil() },
   retro: { titulo: 'Retrospectiva', render: () => renderRetro() },
+  promocoes: { titulo: 'Promoções', render: () => renderPromocoes() },
   trofeus: { titulo: 'Troféus', render: () => renderTrofeus() }, // aberta por #trofeus/<id do jogo>, fora do menu
   config: { titulo: 'Configurações', render: () => renderConfig() }
 };
@@ -1992,6 +2016,110 @@ function cardJogo(j) {
       <div class="legenda"><span>${legendaJogo(j)}</span>${htmlXpJogo(j)}</div>
       ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
     </div></article>`;
+}
+
+/* ---------- Aba Promoções ----------
+   1) Lista de desejos na GG.deals (API oficial, chave GGDEALS_API_KEY): melhor preço em 60+ lojas
+   2) Promoções em destaque da Steam (em reais, sem chave)
+   Guardado só neste aparelho; renova a cada 1 h (Steam) e 6 h (GG.deals). */
+const CHAVE_PROMO = 'minhaEstante.promocoes', GG_SITE = 'https://gg.deals/br/deals/';
+let promoCarregando = false, ggCarregando = false, promoErro = '', ggErro = '', promoTentado = 0;
+const filtroP = { min: 0 };
+function lerPromo() { try { return JSON.parse(localStorage.getItem(CHAVE_PROMO)) || {}; } catch (e) { return {}; } }
+function gravarPromo(mudar) { const c = Object.assign(lerPromo(), mudar); try { localStorage.setItem(CHAVE_PROMO, JSON.stringify(c)); } catch (e) { /* sem espaço */ } }
+const passouHoras = (iso, h) => !iso || Date.now() - Date.parse(iso) > h * 3600e3;
+const idsDesejosSteam = () => [...new Set(state.desejos.filter(d => d.steamAppId).map(d => String(d.steamAppId)))];
+const linkGg = (d, g) => (g && g.url) || `https://gg.deals/br/search/?title=${encodeURIComponent(d.nome)}`;
+
+async function carregarPromocoes(forcar = false) {
+  if (!nuvem.usuario) return;
+  if (!forcar && Date.now() - promoTentado < 10 * 60e3 && (promoErro || ggErro)) return; // falhou há pouco: espera
+  const c = lerPromo(), ids = idsDesejosSteam(), chaveIds = ids.slice().sort().join(',');
+  const tarefas = [];
+  if (!promoCarregando && (forcar || passouHoras(c.steamEm, 1))) {
+    promoCarregando = true;
+    tarefas.push(chamarApi('api/promocoes?tipo=steam')
+      .then(r => { gravarPromo({ steam: r.itens, steamEm: r.atualizado }); promoErro = ''; })
+      .catch(e => { promoErro = e.message; })
+      .finally(() => { promoCarregando = false; }));
+  }
+  if (!ggCarregando && nuvem.integracoes.ggdeals && ids.length && (forcar || passouHoras(c.ggEm, 6) || c.ggIds !== chaveIds)) {
+    ggCarregando = true;
+    tarefas.push(chamarApi('api/promocoes?tipo=ggdeals&ids=' + ids.join(','))
+      .then(r => { gravarPromo({ gg: r.itens, ggEm: r.atualizado, ggIds: chaveIds }); ggErro = ''; })
+      .catch(e => { ggErro = e.message; })
+      .finally(() => { ggCarregando = false; }));
+  }
+  if (!tarefas.length) return;
+  promoTentado = Date.now();
+  if (abaAtual === 'promocoes') renderPromocoes(false);
+  await Promise.all(tarefas);
+  if (abaAtual === 'promocoes' && $('#sheetFundo').hidden) renderPromocoes(false);
+  if (forcar) toast(promoErro || ggErro ? 'Algumas promoções não vieram agora.' : 'Promoções atualizadas.', promoErro || ggErro ? 'aviso' : '');
+}
+function htmlGgDesejos(c) {
+  const desejos = state.desejos.filter(d => d.steamAppId);
+  if (!nuvem.usuario) return '<p class="ajuda">Entre na sua conta para comparar os preços da sua lista de desejos.</p>';
+  if (!nuvem.integracoes.ggdeals) return `<p class="ajuda">Para ver aqui o melhor preço dos seus desejos em mais de 60 lojas (e o menor preço da história), falta ligar a GG.deals:
+    crie uma conta grátis em <a href="https://gg.deals" target="_blank" rel="noopener">gg.deals</a>, gere a chave da API e coloque na Vercel como <code>GGDEALS_API_KEY</code>.</p>`;
+  if (!desejos.length) return '<p class="ajuda">Adicione jogos da Steam em <b>Jogos → Desejos</b> para comparar os preços aqui.</p>';
+  const gg = c.gg || {};
+  if (ggCarregando && !c.gg) return '<div class="carregando">Buscando preços na GG.deals…</div>';
+  const preco = (v, menor, rot) => v == null ? '' : `<div class="gg-linha"><span>${rot}</span><span><b>${brl(v)}</b>${menor != null ? ` · menor da história ${brl(menor)}` : ''}</span></div>`;
+  return desejos.map(d => {
+    const g = gg[String(d.steamAppId)];
+    const recorde = g && ((g.varejo != null && g.menorVarejo != null && g.varejo <= g.menorVarejo) || (g.keyshop != null && g.menorKeyshop != null && g.keyshop <= g.menorKeyshop));
+    const melhor = g ? Math.min(...[g.varejo, g.keyshop].filter(v => v != null)) : null;
+    const alvo = d.precoAlvo > 0 && Number.isFinite(melhor) && melhor <= d.precoAlvo;
+    return `<div class="gg-item">${capaJogo(d, 'mini', 'width:44px;height:60px')}<div class="gg-info">
+      <div class="gg-topo"><b>${esc(d.nome)}</b>${recorde ? '<span class="chip promo">🔥 Menor preço da história</span>' : ''}${alvo ? '<span class="chip ok">✓ No seu alvo</span>' : ''}</div>
+      ${g ? `${preco(g.varejo, g.menorVarejo, 'Lojas oficiais')}${preco(g.keyshop, g.menorKeyshop, 'Keyshops')}` : '<p class="ajuda">A GG.deals não tem preço para este jogo agora.</p>'}
+      <a class="link-loja" href="${esc(linkGg(d, g))}" target="_blank" rel="noopener">Ver todas as lojas na GG.deals ↗</a></div></div>`;
+  }).join('') + `<p class="credito-gg">Preços: <a href="https://gg.deals" target="_blank" rel="noopener">GG.deals</a>${c.ggEm ? ` · atualizado ${new Date(c.ggEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}. Keyshops são lojas de chaves de terceiros: confira a reputação antes de comprar.</p>`;
+}
+function cardPromo(p) {
+  const naLista = state.desejos.some(d => String(d.steamAppId) === p.appid);
+  const tenho = state.jogos.some(j => String(j.steamAppId) === p.appid);
+  return `<article class="promo-card">
+    <img src="${esc(p.capa)}" alt="" loading="lazy" referrerpolicy="no-referrer">
+    <div class="promo-corpo">
+      <h3>${esc(p.nome)}</h3>
+      <div class="promo-precos"><span class="selo-desc">−${p.desconto}%</span><span class="riscado">${brl(p.original)}</span><span class="preco-grande">${brl(p.atual)}</span></div>
+      <div class="trofeu-meta"><span>${esc(p.origem)}</span>${p.fim ? `<span>até ${new Date(p.fim).toLocaleDateString('pt-BR')}</span>` : ''}</div>
+      <div class="promo-acoes">
+        <a class="link-guia" href="https://store.steampowered.com/app/${encodeURIComponent(p.appid)}/" target="_blank" rel="noopener">Ver na Steam ↗</a>
+        ${tenho ? '<span class="chip ok">Você já tem</span>' : naLista ? '<span class="chip ok">Na lista de desejos ✓</span>'
+          : `<button class="btn mini" data-acao="promo-desejo" data-appid="${esc(p.appid)}">${ico('mais')}Desejos</button>`}
+      </div>
+    </div></article>`;
+}
+function renderPromocoes(buscar = true) {
+  const c = lerPromo(), steam = (c.steam || []).filter(p => p.desconto >= filtroP.min);
+  $('#conteudo').innerHTML = `
+    <div class="acoes-linha">
+      <a class="btn pri" href="${GG_SITE}" target="_blank" rel="noopener">Abrir GG.deals ↗</a>
+      ${nuvem.usuario ? `<button class="btn" data-acao="atualizar-promos" ${promoCarregando || ggCarregando ? 'disabled' : ''}>${ico('sync')}${promoCarregando || ggCarregando ? 'Atualizando…' : 'Atualizar'}</button>` : ''}
+    </div>
+    <p class="ajuda" style="margin:0 2px 12px">O site da GG.deals tem todas as promoções de todas as lojas: use o botão acima. Aqui no app ficam o melhor preço dos seus desejos e as promoções em destaque da Steam.</p>
+    <section class="bloco"><h2>Sua lista de desejos na GG.deals</h2>${htmlGgDesejos(c)}${ggErro ? `<div class="alerta">${esc(ggErro)}</div>` : ''}</section>
+    <section class="bloco"><h2>Promoções em destaque na Steam</h2>
+      ${!nuvem.usuario ? '<p class="ajuda">Entre na sua conta para ver as promoções da Steam aqui.</p>'
+        : promoCarregando && !c.steam ? '<div class="carregando">Buscando promoções na Steam…</div>'
+        : `<div class="busca-linha">${campo('Desconto mínimo', `<select id="promoMin">${opcoes([['0', 'Todas'], ['50', '50% ou mais'], ['75', '75% ou mais']], String(filtroP.min))}</select>`, 'largo')}</div>
+          ${steam.length ? `<div class="promo-grade">${steam.map(cardPromo).join('')}</div>` : '<div class="vazio">Nenhuma promoção com esse desconto agora.</div>'}
+          ${c.steamEm ? `<p class="credito-gg">Preços da Steam em reais · atualizado ${new Date(c.steamEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.</p>` : ''}`}
+      ${promoErro ? `<div class="alerta">${esc(promoErro)}</div>` : ''}
+    </section>`;
+  const s = $('#promoMin'); if (s) s.addEventListener('change', () => { filtroP.min = Number(s.value); renderPromocoes(false); });
+  if (buscar) carregarPromocoes();
+}
+function promoParaDesejo(appid) {
+  const p = (lerPromo().steam || []).find(x => x.appid === appid); if (!p) return;
+  if (state.desejos.some(d => String(d.steamAppId) === appid)) { toast('Já está na sua lista de desejos.'); return; }
+  const d = Object.assign(desejoPadrao(), { nome: p.nome, plataforma: 'Steam', steamAppId: appid });
+  definirPreco(d, { atual: p.atual, original: p.original, desconto: p.desconto });
+  state.desejos.push(d);
+  salvar(); renderPromocoes(false); toast(`${p.nome} foi para a lista de desejos.`);
 }
 
 /* ---------- Troféus / conquistas de um jogo (tela #trofeus/<id>) ----------
@@ -3577,6 +3705,9 @@ const ACOES = {
   'sync-agora': async () => { fecharSheet(); if (lerMeta().pendente) await enviar(); else await sincronizar(false); toast(nuvem.estado === 'ok' ? 'Tudo sincronizado.' : 'Não foi possível sincronizar agora.', nuvem.estado === 'ok' ? '' : 'aviso'); },
   'sair': () => sairDaConta(),
   'abrir-sync': () => menuSync(),
+  // Promoções
+  'atualizar-promos': () => carregarPromocoes(true),
+  'promo-desejo': el => promoParaDesejo(el.dataset.appid),
   // Troféus de um jogo
   'ver-trofeus': el => { fecharSheet(); filtroT.vista = 'faltam'; filtroT.revelar = false; trofErro = ''; location.hash = 'trofeus/' + encodeURIComponent(el.dataset.id); },
   'voltar-jogos': () => { location.hash = 'jogos'; },
