@@ -50,9 +50,14 @@ async function precosGgDeals(ids) {
   for (let i = 0; i < ids.length; i += 100) {
     const lote = ids.slice(i, i + 100);
     const { status, corpo } = await pegarJson(`https://api.gg.deals/v1/prices/by-steam-app-id/?key=${encodeURIComponent(chave)}&ids=${lote.join(',')}&region=br`);
-    if (status === 401 || status === 403) throw new ErroHttp(400, 'A GG.deals recusou a chave GGDEALS_API_KEY. Confira se copiou a chave certa.');
+    // A GG.deals explica o erro em data.message (ex.: chave inválida vem como 400 "Invalid key.")
+    const msg = String((corpo && corpo.data && corpo.data.message) || '');
+    if (status === 401 || status === 403 || /invalid key|key/i.test(msg) && status >= 400)
+      throw new ErroHttp(400, 'A GG.deals recusou a chave GGDEALS_API_KEY ("chave inválida"). Copie de novo a chave na sua conta da GG.deals, troque na Vercel e faça Redeploy.');
     if (status === 429) throw new ErroHttp(429, 'A GG.deals pediu para esperar um pouco (limite de consultas). Tente de novo em alguns minutos.');
-    if (status !== 200 || !corpo || corpo.success === false) throw new ErroHttp(502, 'A GG.deals não respondeu agora. Tente de novo em alguns minutos.');
+    if (status === 0) throw new ErroHttp(502, 'A GG.deals não respondeu agora. Tente de novo em alguns minutos.');
+    if (status !== 200 || !corpo || corpo.success === false)
+      throw new ErroHttp(502, `A GG.deals recusou o pedido${msg ? `: "${msg.slice(0, 120)}"` : ` (código ${status})`}. Se continuar, me mande essa mensagem.`);
     const dados = corpo.data || {};
     for (const id of lote) {
       const g = dados[id];
