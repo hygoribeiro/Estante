@@ -80,6 +80,12 @@ No Android, funciona no Chrome (melhor ainda com o app instalado: menu ⋮ → I
 
 ## Renovar o token da PSN (a cada ~2 meses)
 Quando a sincronização da PSN avisar que o NPSSO expirou: gere um novo (passo 3), troque `PSN_NPSSO` na Vercel e faça **Redeploy**.
+O próprio app mostra esse passo a passo, com os links, no botão **Como renovar** (no aviso de erro e em **Ajustes → Token da PSN**).
+
+Aviso antes de vencer: o `api/config` entrega uma "impressão digital" do token (12 letras do SHA-256, não o token).
+O app guarda o dia em que viu cada token pela primeira vez e, a partir de 50 dias, mostra um aviso na aba Jogos.
+Com o lembrete diário ativado, o cron também manda uma notificação (uma vez por token) quando ele está perto de vencer
+ou quando a PSN já recusou o token.
 
 ## Como a sincronização funciona
 - Cada alteração vai para a nuvem em ~1 segundo. O indicador no topo mostra **Salvo**, **Salvando…** ou **Offline**.

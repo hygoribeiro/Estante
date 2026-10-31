@@ -2,12 +2,14 @@
 // - Chamado pelo cron da Vercel uma vez por dia (vercel.json, 00:00 UTC = 21:00 em Brasília):
 //   1) backup semanal da estante (tabela backups, guarda as 8 mais recentes);
 //   2) para quem ainda não registrou nada hoje, manda "sua sequência está em risco";
-//   3) avisa quando um jogo da lista de desejos (Steam) chega no preço alvo ou tem 50%+ de desconto.
+//   3) avisa quando um jogo da lista de desejos (Steam) chega no preço alvo ou tem 50%+ de desconto;
+//   4) avisa quando o token da PSN (NPSSO) está para vencer (~10 dias antes) ou já venceu.
 // - Chamado pelo app com ?teste=1 (usuário logado): manda uma notificação de teste.
 // Variáveis na Vercel: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, SUPABASE_SERVICE_ROLE_KEY e CRON_SECRET
 // (mais SUPABASE_URL, que já existe). VAPID_EMAIL é opcional.
 import webpush from 'web-push';
-import { verificarUsuario, responderErro, ErroHttp } from './_comum.js';
+import { verificarUsuario, responderErro, ErroHttp, idTokenPsn } from './_comum.js';
+import { loginPsn } from './_psn.js';
 import { precosSteam } from './_precos.js';
 
 const FUSO = 'America/Sao_Paulo';
@@ -118,6 +120,43 @@ async function alertasPreco(db, porUsuario, linhas) {
   return { avisos };
 }
 
+// ---------- Token da PSN (NPSSO) ----------
+// O app guarda em dados.integracoes.psnToken = { id, desde } o dia em que viu o token atual pela primeira vez.
+// Aqui: 1) testa o login na PSN; se falhar, avisa que venceu; 2) se não, avisa ~10 dias antes dos ~60 dias.
+// Cada aviso vai uma vez só por token (lembrado na tabela alertas_preco, com appid "psn-venceu:<id>" / "psn-perto:<id>").
+const PSN_VALIDADE = 60, PSN_AVISAR = 50;
+async function avisoTokenPsn(db, porUsuario, linhas) {
+  const id = idTokenPsn();
+  if (!id) return { psn: 'não configurada' };
+  let valido = true;
+  try { await loginPsn(); } catch (e) { valido = false; }
+  let avisos = 0;
+  for (const [uid, lista] of Object.entries(porUsuario)) {
+    const t = (((linhas.find(l => l.user_id === uid) || {}).dados || {}).integracoes || {}).psnToken;
+    let tipo = null, msg = null;
+    if (!valido) {
+      tipo = 'psn-venceu';
+      msg = { titulo: 'O token da PSN venceu', corpo: 'A sincronização da PSN parou. Abra o app e toque em “Como renovar” (leva uns 3 minutos).', url: './#jogos' };
+    } else if (t && t.id === id && t.desde) {
+      const dias = Math.floor((Date.parse(hojeBrasil().iso) - Date.parse(t.desde)) / 864e5);
+      if (dias >= PSN_AVISAR) {
+        tipo = 'psn-perto';
+        msg = { titulo: 'O token da PSN vence em breve', corpo: `Faltam uns ${Math.max(PSN_VALIDADE - dias, 0)} dia(s). Renove antes para não parar de sincronizar: Ajustes → Token da PSN → Como renovar.`, url: './#config' };
+      }
+    }
+    if (!tipo) continue;
+    const appid = `${tipo}:${id}`;
+    const ja = await db(`alertas_preco?user_id=eq.${uid}&appid=eq.${encodeURIComponent(appid)}&select=appid`) || [];
+    if (ja.length) continue;
+    if (await enviarPara(db, lista, msg)) {
+      await db('alertas_preco', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify([{ user_id: uid, appid, preco: 0, avisado_em: new Date().toISOString() }]) });
+      avisos++;
+    }
+  }
+  return { valido, avisos };
+}
+
 // ---------- Lembrete da sequência ----------
 async function lembretes(db, porUsuario, linhas) {
   const { iso: hoje, dia } = hojeBrasil();
@@ -172,6 +211,7 @@ export default async function handler(req, res) {
     if (porUsuario) {
       await etapa('lembrete', () => lembretes(db, porUsuario, linhas));
       await etapa('precos', () => alertasPreco(db, porUsuario, linhas));
+      await etapa('psn', () => avisoTokenPsn(db, porUsuario, linhas));
     }
     res.status(200).json(resultado);
   } catch (e) { responderErro(res, e); }

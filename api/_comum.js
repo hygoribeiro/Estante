@@ -1,7 +1,9 @@
 // Funções compartilhadas pelas rotas /api (arquivos com "_" não viram rota na Vercel)
+import { createHash } from 'node:crypto';
 
 export class ErroHttp extends Error {
-  constructor(status, mensagem) { super(mensagem); this.status = status; }
+  // codigo (opcional) diz ao app qual ajuda mostrar (ex.: 'npsso' = token da PSN vencido)
+  constructor(status, mensagem, codigo) { super(mensagem); this.status = status; this.codigo = codigo || null; }
 }
 
 // Confere o login do Supabase enviado pelo app (cabeçalho Authorization: Bearer <token>)
@@ -25,7 +27,9 @@ export function responderErro(res, e) {
   const status = e instanceof ErroHttp ? e.status : 500;
   if (!(e instanceof ErroHttp)) console.error(e);
   res.setHeader('Cache-Control', 'no-store');
-  res.status(status).json({ erro: e instanceof ErroHttp ? e.message : 'Erro inesperado no servidor. Tente de novo em instantes.' });
+  const corpo = { erro: e instanceof ErroHttp ? e.message : 'Erro inesperado no servidor. Tente de novo em instantes.' };
+  if (e instanceof ErroHttp && e.codigo) corpo.codigo = e.codigo;
+  res.status(status).json(corpo);
 }
 
 // Normaliza nomes para comparar (sem acentos, símbolos ™ ®, minúsculo)
@@ -38,4 +42,11 @@ export async function emLotes(lista, limite, tarefa) {
     while (i < lista.length) { const item = lista[i++]; await tarefa(item); }
   });
   await Promise.all(trabalhadores);
+}
+
+// "Impressão digital" do token: 12 letras do SHA-256 do NPSSO. Não dá para voltar ao token a partir dela,
+// mas muda quando o token é trocado. O app usa isso para saber há quantos dias o token atual está em uso.
+export function idTokenPsn() {
+  const npsso = (process.env.PSN_NPSSO || '').trim();
+  return npsso ? createHash('sha256').update(npsso).digest('hex').slice(0, 12) : '';
 }

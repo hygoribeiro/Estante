@@ -765,7 +765,9 @@ const desejoPadrao = () => ({
   precoAlvo: null, preco: null, menorPreco: null, notas: '', criado: hoje()
   // preco = { atual, original, desconto, em } · menorPreco = menor preço já visto
 });
-const integracoesPadrao = () => ({ steam: null, psn: null, ignorados: { steam: [], psn: [] }, precos: null });
+const integracoesPadrao = () => ({ steam: null, psn: null, ignorados: { steam: [], psn: [] }, precos: null, psnToken: null });
+// psnToken = { id, desde, vencido }: id é a "impressão digital" do token NPSSO que está na Vercel (api/config),
+// desde = dia em que o app viu esse token pela primeira vez, vencido = a PSN recusou esse token.
 const estadoVazio = () => ({ versao: 1, jogos: [], livros: [], config: configPadrao(), ultimoBackup: null, integracoes: integracoesPadrao(), eventos: {}, gamer: gamerPadrao(), desejos: [] });
 
 /* =========================================================
@@ -1962,6 +1964,7 @@ function renderJogos() {
       <button class="btn" data-acao="importar-texto">${ico('colar')}Colar lista</button>
       ${nuvem.usuario ? `<button class="btn" data-acao="abrir-sync">${ico('sync')}Steam / PSN</button>` : ''}
     </div>
+    ${htmlAvisoTokenPsn()}
     ${n > 2 ? `<div class="alerta"><b>Regra do foco:</b> você tem ${n} jogos em “Jogando”. Termine um antes de começar outro.</div>` : ''}
     <div class="busca-linha">
       <input type="search" id="buscaJogo" placeholder="Buscar jogo…" value="${esc(filtroJ.busca)}" autocomplete="off">
@@ -2266,7 +2269,7 @@ function promoParaDesejo(appid) {
 /* ---------- Troféus / conquistas de um jogo (tela #trofeus/<id>) ----------
    A lista vem da PSN ou da Steam (api/trofeus) e fica guardada só neste aparelho
    (não vai para a nuvem: são muitos dados). Guias = links de busca prontos. */
-let trofeusJogo = null, trofCarregando = false, trofErro = '';
+let trofeusJogo = null, trofCarregando = false, trofErro = '', trofErroNpsso = false;
 const filtroT = { vista: 'faltam', busca: '', revelar: false };
 const CHAVE_TROF = 'minhaEstante.trofeus.', MAX_CACHE_TROF = 20;
 const TIPO_TROF = { platinum: ['Platina', 'plat'], gold: ['Ouro', 'ouro'], silver: ['Prata', 'prata'], bronze: ['Bronze', 'bronze'] };
@@ -2319,7 +2322,7 @@ async function carregarTrofeus(j, forcar = false) {
   if (!j || !fonteTrof(j) || !nuvem.usuario || trofCarregando) return;
   const cache = lerCacheTrof(j), chave = chaveFonteTrof(j);
   if (!forcar && cache && cache.chave === chave && Date.now() - Date.parse(cache.atualizado) < 12 * 3600e3) return;
-  trofCarregando = true; trofErro = '';
+  trofCarregando = true; trofErro = ''; trofErroNpsso = false;
   if (abaAtual === 'trofeus') renderTrofeus(false);
   try {
     const url = fonteTrof(j) === 'psn'
@@ -2329,7 +2332,7 @@ async function carregarTrofeus(j, forcar = false) {
     d.chave = chave;
     gravarCacheTrof(j, d);
     if (forcar) toast('Lista de troféus atualizada.');
-  } catch (e) { trofErro = e.message || 'Não consegui buscar os troféus agora.'; }
+  } catch (e) { trofErro = e.message || 'Não consegui buscar os troféus agora.'; trofErroNpsso = e.codigo === 'npsso'; }
   finally {
     trofCarregando = false;
     if (abaAtual === 'trofeus' && trofeusJogo === j.id) renderTrofeus(false);
@@ -2381,7 +2384,7 @@ function renderTrofeus(buscar = true) {
   if (!fonte) estado = `<div class="alerta">Este jogo ainda não está ligado à ${steam ? 'Steam' : 'PSN'}, por isso não tenho a lista de ${palavra}. ${nuvem.usuario ? `Use <b>Jogos → Steam / PSN</b> e vincule este jogo na revisão.` : 'Entre na sua conta e sincronize com a Steam/PSN.'} Os guias abaixo já funcionam.</div>`;
   else if (!nuvem.usuario && !valido) estado = '<div class="alerta">Entre na sua conta para buscar a lista de troféus.</div>';
   else if (trofCarregando && !valido) estado = `<div class="carregando">Buscando os ${palavra} na ${fonte === 'psn' ? 'PSN' : 'Steam'}…</div>`;
-  if (trofErro) estado += `<div class="alerta">${esc(trofErro)}</div>`;
+  if (trofErro) estado += `<div class="alerta">${esc(trofErro)}${trofErroNpsso ? ` <button class="btn mini" data-acao="ajuda-npsso" style="margin-top:8px">Como renovar o token</button>` : ''}</div>`;
   if (valido && valido.aviso) estado += `<div class="alerta">${esc(valido.aviso)}</div>`;
   if (valido && valido.semConquistas) estado += `<div class="vazio">Este jogo não tem conquistas na Steam.</div>`;
 
@@ -3439,7 +3442,7 @@ async function iniciarNuvem() {
   nuvem.lembrete = cfg.lembrete || null;
   let sessao = null;
   try { const { data } = await nuvem.cli.auth.getSession(); sessao = data && data.session; } catch (e) { /* ignora */ }
-  if (sessao) { nuvem.usuario = sessao.user; await sincronizar(true); }
+  if (sessao) { nuvem.usuario = sessao.user; await sincronizar(true); registrarTokenPsn(); }
   else { indicador('sair'); if (!lerMeta().offline) mostrarLogin(); }
   render();
 }
@@ -3599,7 +3602,8 @@ function htmlContaConfig() {
     <div class="integracao"><span>${esc(nuvem.usuario.email || '')}<small>Dados salvos na nuvem</small></span><button class="btn mini" data-acao="conta">Conta</button></div>
     ${linha('steam', 'Steam', nuvem.integracoes.steam, 'Configure STEAM_API_KEY e STEAM_ID na Vercel')}
     ${linha('psn', 'PlayStation Network', nuvem.integracoes.psn, 'Configure PSN_NPSSO na Vercel')}
-    <p class="ajuda" style="margin-top:8px">A PSN usa uma integração não oficial: o token NPSSO expira em cerca de 2 meses e precisa ser renovado.</p>
+    ${nuvem.integracoes.psn ? `<div class="integracao"><span>Token da PSN<small>${esc(textoTokenPsn())}</small></span><button class="btn mini" data-acao="ajuda-npsso">Como renovar</button></div>` : ''}
+    <p class="ajuda" style="margin-top:8px">A PSN usa uma integração não oficial: o token NPSSO expira em cerca de 2 meses e precisa ser renovado. O app avisa uns 10 dias antes.</p>
   </section>`;
 }
 
@@ -3618,9 +3622,72 @@ async function chamarApi(caminho) {
   catch (e) { throw new Error('Sem conexão com o servidor.'); }
   let corpo = {};
   try { corpo = await r.json(); } catch (e) { /* ignora */ }
-  if (!r.ok) throw new Error(corpo.erro || `Erro ${r.status} no servidor.`);
+  if (!r.ok) {
+    const erro = new Error(corpo.erro || `Erro ${r.status} no servidor.`);
+    erro.codigo = corpo.codigo || null;
+    if (erro.codigo === 'npsso') marcarTokenPsnVencido();
+    throw erro;
+  }
   return corpo;
 }
+/* ---------- Token da PSN (NPSSO): passo a passo e aviso antes de vencer ---------- */
+const PSN_VALIDADE = 60, PSN_AVISAR = 50; // dias: validade aproximada e quando começar a avisar
+const diasToken = iso => Math.floor((Date.parse(hoje()) - Date.parse(iso)) / 864e5);
+function tokenPsnAtual() {
+  const t = state.integracoes.psnToken, id = nuvem.integracoes.psnToken;
+  return t && id && t.id === id ? t : null;
+}
+// Guarda o dia em que o app viu o token atual pela primeira vez (é quando ele foi trocado na Vercel)
+function registrarTokenPsn() {
+  const id = nuvem.integracoes.psnToken;
+  if (!id || tokenPsnAtual()) return;
+  state.integracoes.psnToken = { id, desde: hoje(), vencido: false };
+  salvar();
+}
+function marcarTokenPsnVencido() {
+  const t = tokenPsnAtual();
+  if (t && !t.vencido) { t.vencido = true; salvar(); render(); }
+}
+// Situação do token em uma frase (usada no aviso e em Ajustes)
+function situacaoTokenPsn() {
+  const t = tokenPsnAtual();
+  if (!t) return null;
+  if (t.vencido) return { nivel: 'vencido', dias: diasToken(t.desde) };
+  const dias = diasToken(t.desde), falta = PSN_VALIDADE - dias;
+  const vence = new Date(Date.parse(t.desde) + PSN_VALIDADE * 864e5).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
+  return { nivel: dias >= PSN_AVISAR ? 'perto' : 'ok', dias, falta, vence };
+}
+function textoTokenPsn() {
+  const s = situacaoTokenPsn();
+  if (!s) return 'Validade: renove quando a sincronização pedir';
+  if (s.nivel === 'vencido') return 'Venceu: gere um novo token';
+  const uso = s.dias === 0 ? 'Trocado hoje' : `Em uso há ${s.dias} dia(s)`;
+  return `${uso} · deve vencer por volta de ${s.vence}`;
+}
+function htmlAvisoTokenPsn() {
+  if (!nuvem.usuario || !nuvem.integracoes.psn) return '';
+  const s = situacaoTokenPsn();
+  if (!s || s.nivel === 'ok') return '';
+  const texto = s.nivel === 'vencido'
+    ? '<b>O token da PSN venceu.</b> Enquanto não for renovado, a PSN não sincroniza.'
+    : `<b>O token da PSN vence em breve</b> (${s.falta > 0 ? `uns ${s.falta} dia(s), por volta de ${s.vence}` : `já deveria ter vencido por volta de ${s.vence}`}). Renove antes para não ficar sem sincronizar.`;
+  return `<div class="alerta">${texto} <button class="btn mini" data-acao="ajuda-npsso" style="margin-top:8px">Como renovar</button></div>`;
+}
+const PSN_SITE = 'https://www.playstation.com/pt-br/', PSN_COOKIE = 'https://ca.account.sony.com/api/v1/ssocookie', VERCEL_SITE = 'https://vercel.com/dashboard';
+function htmlAjudaNpsso(msg) {
+  const passo = (n, titulo, corpo) => `<li style="margin-bottom:12px"><b>${n}. ${titulo}</b><div class="ajuda" style="margin-top:4px">${corpo}</div></li>`;
+  return `${msg ? `<div class="alerta">${esc(msg)}</div>` : ''}
+    <ol style="list-style:none;padding:0;margin:0 0 8px">
+      ${passo(1, 'Entre na PlayStation', `Abra o site e entre com a sua conta da PSN (a mesma dos jogos).<br><a class="btn mini" href="${PSN_SITE}" target="_blank" rel="noopener" style="margin-top:6px">Abrir playstation.com ↗</a>`)}
+      ${passo(2, 'Copie o código novo', `No <b>mesmo navegador</b>, abra o link abaixo. Aparece algo como <code>{"npsso":"aBc123…"}</code>. Copie só o código entre as aspas (64 letras e números).<br><a class="btn mini" href="${PSN_COOKIE}" target="_blank" rel="noopener" style="margin-top:6px">Abrir página do código ↗</a><br>Se aparecer erro em vez do código, você não está logado: volte ao passo 1.<br><b>Esse código é como uma senha: não mande para ninguém.</b>`)}
+      ${passo(3, 'Troque na Vercel', `Abra o projeto da Estante → <b>Settings</b> → <b>Environment Variables</b> → em <b>PSN_NPSSO</b> toque em <b>⋯ → Edit</b>, cole o código novo (sem aspas) e <b>Save</b>.<br><a class="btn mini" href="${VERCEL_SITE}" target="_blank" rel="noopener" style="margin-top:6px">Abrir Vercel ↗</a>`)}
+      ${passo(4, 'Publique de novo (Redeploy)', 'Na aba <b>Deployments</b>, no primeiro da lista toque em <b>⋯ → Redeploy</b> e espere ficar <b>Ready</b> (1 a 2 minutos).')}
+      ${passo(5, 'Teste', 'Recarregue o app e sincronize a PSN de novo. O app passa a contar a validade do token novo e avisa uns 10 dias antes do próximo vencimento.')}
+    </ol>
+    <button class="btn pri cheio" data-acao="recarregar-app">Já troquei: recarregar o app</button>
+    <button class="btn cheio" data-acao="fechar-sheet" style="margin-top:8px">Fechar</button>`;
+}
+
 function menuSync() {
   abrirSheet('Sincronizar jogos', `<p class="ajuda" style="margin-bottom:12px">Atualiza horas, % de troféus/conquistas e marca platinas/100%. Prioridade, notas, meta e dificuldade não mudam. Você revisa tudo antes de gravar.</p>
     <div class="menu-opcoes">
@@ -3639,7 +3706,9 @@ async function sincronizarFonte(fonte) {
     mostrarPlano(fonte, resp);
   } catch (e) {
     if (meu !== idSync || $('#sheetFundo').hidden) return;
-    $('#sheetCorpo').innerHTML = `<div class="alerta">${esc(e.message)}</div><button class="btn cheio" data-acao="fechar-sheet">Fechar</button>`;
+    $('#sheetCorpo').innerHTML = e.codigo === 'npsso'
+      ? htmlAjudaNpsso(e.message)
+      : `<div class="alerta">${esc(e.message)}</div><button class="btn cheio" data-acao="fechar-sheet">Fechar</button>`;
   }
 }
 // Semelhança de nomes (ignora palavras como "Remastered", "Edition"…) para sugerir vínculos
@@ -3846,6 +3915,8 @@ const ACOES = {
   'sync-agora': async () => { fecharSheet(); if (lerMeta().pendente) await enviar(); else await sincronizar(false); toast(nuvem.estado === 'ok' ? 'Tudo sincronizado.' : 'Não foi possível sincronizar agora.', nuvem.estado === 'ok' ? '' : 'aviso'); },
   'sair': () => sairDaConta(),
   'abrir-sync': () => menuSync(),
+  'ajuda-npsso': () => abrirSheet('Renovar o token da PSN', htmlAjudaNpsso('')),
+  'recarregar-app': () => location.reload(),
   // Promoções
   'atualizar-promos': () => carregarPromocoes(true),
   'promo-desejo': el => promoParaDesejo(el.dataset.appid),

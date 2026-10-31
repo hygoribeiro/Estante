@@ -1,3 +1,5 @@
+import { idTokenPsn } from './_comum.js';
+
 // Entrega ao app as configurações PÚBLICAS do Supabase e quais integrações estão ligadas.
 // (A chave "anon" do Supabase é pública por natureza; a segurança vem das regras RLS.)
 export default function handler(req, res) {
@@ -8,6 +10,7 @@ export default function handler(req, res) {
     integracoes: {
       steam: !!(process.env.STEAM_API_KEY && process.env.STEAM_ID),
       psn: !!process.env.PSN_NPSSO,
+      psnToken: idTokenPsn(), // impressão digital do token (não é o token); muda quando ele é trocado
       ggdeals: !!process.env.GGDEALS_API_KEY,
       itad: !!process.env.ITAD_API_KEY
     },
