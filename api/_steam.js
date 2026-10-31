@@ -25,6 +25,7 @@ export async function credenciaisSteam() {
   if (!/^\d{17}$/.test(id)) {
     const v = await pegarJson(`${BASE}/ISteamUser/ResolveVanityURL/v1/?key=${k}&vanityurl=${encodeURIComponent(id)}`);
     if (v.__status === 401 || v.__status === 403) throw new ErroHttp(400, 'A chave STEAM_API_KEY foi recusada pela Steam.');
+    if (v.__status !== undefined) throw new ErroHttp(502, 'A Steam não respondeu agora. Tente de novo em alguns minutos.');
     if (!v.response || v.response.success !== 1) throw new ErroHttp(400, 'Não encontrei esse STEAM_ID. Use o número de 17 dígitos do seu perfil.');
     steamid = v.response.steamid;
   }

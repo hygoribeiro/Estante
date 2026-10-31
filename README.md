@@ -96,6 +96,9 @@ ou quando a PSN já recusou o token.
 ## Avisos
 - A integração com a PSN usa uma biblioteca **não oficial**. Pode parar de funcionar se a Sony mudar algo, e é uma zona cinzenta nos termos de uso da Sony.
 - Nunca coloque chaves ou o NPSSO no código. Elas ficam só nas variáveis da Vercel.
+- Segurança do site: o `vercel.json` manda uma política de conteúdo (CSP) que só deixa o app falar com o próprio site,
+  o Supabase (`*.supabase.co`), o Google Books e a Open Library. Se um dia trocar o Supabase por um endereço próprio,
+  acrescente esse endereço em `connect-src`. O supabase-js tem versão fixa e é conferido (SRI) antes de rodar.
 
 ## Aba Promoções (GG.deals)
 - **Promoções em destaque na Steam**: em reais, automáticas, sem chave. Botão "+ Desejos" leva o jogo para a lista de desejos.

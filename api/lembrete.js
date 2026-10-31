@@ -68,19 +68,26 @@ async function enviarPara(db, assinaturas, mensagem) {
 }
 
 // ---------- Backup automático: uma cópia por semana, guarda as 8 mais recentes ----------
+// As automáticas e as feitas no app (manuais e de segurança antes de restaurar) contam separado:
+// fazer várias cópias à mão não apaga as semanais nem adia a próxima. Guarda 8 de cada tipo.
 const SEMANA = 6.5 * 864e5, MANTER = 8;
 async function fazerBackups(db, linhas) {
   let feitos = 0, apagados = 0;
   for (const { user_id: uid, dados } of linhas) {
     if (!dados || !Array.isArray(dados.jogos)) continue;
-    const ult = await db(`backups?user_id=eq.${uid}&select=criado_em&order=criado_em.desc&limit=1`) || [];
+    const ult = await db(`backups?user_id=eq.${uid}&origem=eq.auto&select=criado_em&order=criado_em.desc&limit=1`) || [];
     if (ult[0] && Date.now() - new Date(ult[0].criado_em).getTime() < SEMANA) continue;
     await db('backups', { method: 'POST', headers: { Prefer: 'return=minimal' },
       body: JSON.stringify({ user_id: uid, origem: 'auto', jogos: dados.jogos.length, livros: (dados.livros || []).length, dados }) });
     feitos++;
-    const todos = await db(`backups?user_id=eq.${uid}&select=id&order=criado_em.desc`) || [];
-    const sobra = todos.slice(MANTER).map(b => b.id);
-    if (sobra.length) { await db(`backups?id=in.(${sobra.join(',')})`, { method: 'DELETE' }); apagados += sobra.length; }
+  }
+  // Limpeza: no máximo MANTER automáticas e MANTER do app por pessoa
+  for (const { user_id: uid } of linhas) {
+    for (const filtro of ['origem=eq.auto', 'origem=neq.auto']) {
+      const todos = await db(`backups?user_id=eq.${uid}&${filtro}&select=id&order=criado_em.desc`) || [];
+      const sobra = todos.slice(MANTER).map(b => b.id);
+      if (sobra.length) { await db(`backups?id=in.(${sobra.join(',')})`, { method: 'DELETE' }); apagados += sobra.length; }
+    }
   }
   return { feitos, apagados };
 }

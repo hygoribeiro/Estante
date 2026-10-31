@@ -709,6 +709,9 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 // Escapa texto para inserir em HTML com segurança
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// Endereço para href: só aceita http(s) (bloqueia "javascript:" vindo de backup importado ou de API) e já escapa
+const ehUrlWeb = u => /^https?:\/\//i.test(String(u ?? '').trim());
+const urlOk = u => ehUrlWeb(u) ? esc(String(u).trim()) : '#';
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 // Data de hoje no formato AAAA-MM-DD (fuso local)
 const hoje = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -2099,7 +2102,7 @@ function htmlGgDesejos(c) {
     return `<div class="gg-item">${capaJogo(d, 'mini', 'width:44px;height:60px')}<div class="gg-info">
       <div class="gg-topo"><b>${esc(d.nome)}</b>${recorde ? '<span class="chip promo">🔥 Menor preço da história</span>' : ''}${alvo ? '<span class="chip ok">✓ No seu alvo</span>' : ''}</div>
       ${g ? `${preco(g.varejo, g.menorVarejo, 'Lojas oficiais')}${preco(g.keyshop, g.menorKeyshop, 'Keyshops')}` : '<p class="ajuda">A GG.deals não tem preço para este jogo agora.</p>'}
-      <a class="link-loja" href="${esc(linkGg(d, g))}" target="_blank" rel="noopener">Ver todas as lojas na GG.deals ↗</a></div></div>`;
+      <a class="link-loja" href="${urlOk(linkGg(d, g))}" target="_blank" rel="noopener">Ver todas as lojas na GG.deals ↗</a></div></div>`;
   }).join('') + `<p class="credito-gg">Preços: <a href="https://gg.deals" target="_blank" rel="noopener">GG.deals</a>${c.ggEm ? ` · atualizado ${new Date(c.ggEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}` : ''}. Keyshops são lojas de chaves de terceiros: confira a reputação antes de comprar.</p>`;
 }
 // Ofertas de várias lojas de PC (IsThereAnyDeal). Links vão direto para a loja (link oficial do ITAD, sem alterar)
@@ -2116,8 +2119,8 @@ function cardItad(o) {
         ${o.tipo && o.tipo !== 'game' ? `<span class="chip">${o.tipo === 'dlc' ? 'DLC' : esc(o.tipo)}</span>` : ''}${o.voucher ? `<span class="chip ok">Cupom: ${esc(o.voucher)}</span>` : ''}</div>
       <div class="trofeu-meta"><span>${esc(o.loja)}</span>${o.drm.length ? `<span>ativa na ${esc(o.drm.join(' / '))}</span>` : ''}${o.expira ? `<span>até ${new Date(o.expira).toLocaleDateString('pt-BR')}</span>` : ''}</div>
       <div class="promo-acoes">
-        ${o.url ? `<a class="link-guia" href="${esc(o.url)}" target="_blank" rel="noopener">Ver na ${esc(o.loja || 'loja')} ↗</a>` : ''}
-        <a class="link-guia" href="${esc(o.pagina)}" target="_blank" rel="noopener">Preços ↗</a>
+        ${o.url ? `<a class="link-guia" href="${urlOk(o.url)}" target="_blank" rel="noopener">Ver na ${esc(o.loja || 'loja')} ↗</a>` : ''}
+        <a class="link-guia" href="${urlOk(o.pagina)}" target="_blank" rel="noopener">Preços ↗</a>
         ${tenho ? '<span class="chip ok">Você já tem</span>' : naLista ? '<span class="chip ok">Na lista ✓</span>'
           : `<button class="btn mini" data-acao="itad-desejo" data-id="${esc(o.id)}">${ico('mais')}Desejos</button>`}
       </div>
@@ -2168,11 +2171,11 @@ function resultadoBusca(g) {
         <div class="trofeu-meta">${g.menorHistoria != null ? `<span>Menor da história: ${brl(g.menorHistoria)}</span>` : ''}${g.menor1Ano != null ? `<span>no último ano: ${brl(g.menor1Ano)}</span>` : ''}</div>
         ${of.length > 1 ? `<details class="como"><summary>Ver todas as lojas (${of.length})</summary><ul class="lojas-busca">${of.map(o => `<li>
           <span>${esc(o.loja)}${o.drm.length ? `<small> · ativa na ${esc(o.drm.join(' / '))}</small>` : ''}${o.voucher ? `<small> · cupom ${esc(o.voucher)}</small>` : ''}</span>
-          <span>${o.desconto ? `<b class="t-desc">−${o.desconto}%</b> ` : ''}<b>${brl(o.preco)}</b>${o.url ? ` <a href="${esc(o.url)}" target="_blank" rel="noopener">Ir ↗</a>` : ''}</span></li>`).join('')}</ul></details>` : ''}`
+          <span>${o.desconto ? `<b class="t-desc">−${o.desconto}%</b> ` : ''}<b>${brl(o.preco)}</b>${o.url ? ` <a href="${urlOk(o.url)}" target="_blank" rel="noopener">Ir ↗</a>` : ''}</span></li>`).join('')}</ul></details>` : ''}`
       : '<p class="ajuda">Nenhuma loja de PC está vendendo este jogo agora no Brasil.</p>'}
       <div class="promo-acoes">
-        ${melhor && melhor.url ? `<a class="link-guia" href="${esc(melhor.url)}" target="_blank" rel="noopener">Ver na ${esc(melhor.loja)} ↗</a>` : ''}
-        <a class="link-guia" href="${esc(g.pagina)}" target="_blank" rel="noopener">Histórico de preços ↗</a>
+        ${melhor && melhor.url ? `<a class="link-guia" href="${urlOk(melhor.url)}" target="_blank" rel="noopener">Ver na ${esc(melhor.loja)} ↗</a>` : ''}
+        <a class="link-guia" href="${urlOk(g.pagina)}" target="_blank" rel="noopener">Histórico de preços ↗</a>
         ${tenho ? '<span class="chip ok">Você já tem</span>' : naLista ? '<span class="chip ok">Na lista ✓</span>'
           : `<button class="btn mini" data-acao="busca-desejo" data-id="${esc(g.id)}">${ico('mais')}Desejos</button>`}
       </div>
@@ -2316,7 +2319,7 @@ function guiasTrofeu(j, t) {
   if (t.nome && t.nome !== en) l.push(['Guia (português)', `https://www.google.com/search?q=${busca(`${j.nome} "${t.nome}" ${steam ? 'conquista' : 'troféu'} como conseguir`)}`]);
   return l;
 }
-const linksHtml = (lista, cls = 'link-guia') => lista.map(([r, u]) => `<a class="${cls}" href="${esc(u)}" target="_blank" rel="noopener" data-parar>${esc(r)} ↗</a>`).join('');
+const linksHtml = (lista, cls = 'link-guia') => lista.map(([r, u]) => `<a class="${cls}" href="${urlOk(u)}" target="_blank" rel="noopener" data-parar>${esc(r)} ↗</a>`).join('');
 
 async function carregarTrofeus(j, forcar = false) {
   if (!j || !fonteTrof(j) || !nuvem.usuario || trofCarregando) return;
@@ -2494,7 +2497,7 @@ function cardDesejo(d) {
       </div>
       ${perto != null ? `<span class="barra alvo" title="Quanto o preço atual está perto do alvo"><i style="width:${perto}%"></i></span>` : ''}
       <div class="legenda"><span>${d.steamAppId ? 'Preço automático · Steam' : `${esc(d.plataforma)} · preço anotado${p && p.em ? ` em ${fmtData(p.em)}` : ''}`}</span>
-        ${loja ? `<a class="link-loja" href="${esc(loja)}" target="_blank" rel="noopener" data-parar>Abrir na loja ↗</a>` : ''}</div>
+        ${loja ? `<a class="link-loja" href="${urlOk(loja)}" target="_blank" rel="noopener" data-parar>Abrir na loja ↗</a>` : ''}</div>
       ${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}
     </div></article>`;
 }
@@ -2573,6 +2576,7 @@ function salvarDesejo(form, d, novo, escolhido) {
     if (escolhido && escolhido.preco) definirPreco(d, escolhido.preco);
   } else {
     d.link = (f.link || '').trim();
+    if (d.link && !ehUrlWeb(d.link)) { toast('O link da loja precisa começar com https://', 'erro'); form.elements.link.focus(); return; }
     const manual = positivo(num(f.precoManual));
     if (manual != null) { if (!d.preco || d.preco.atual !== manual) definirPreco(d, { atual: manual, original: manual, desconto: 0 }); }
     else d.preco = null;
@@ -3305,7 +3309,7 @@ const copiaDoEstado = () => ({ origem: 'manual', jogos: state.jogos.length, livr
 async function carregarCopias() {
   const caixa = $('#listaCopias'); if (!caixa || !nuvem.cli || !nuvem.usuario) return;
   try {
-    const { data, error } = await nuvem.cli.from('backups').select('id,criado_em,origem,jogos,livros').order('criado_em', { ascending: false }).limit(12);
+    const { data, error } = await nuvem.cli.from('backups').select('id,criado_em,origem,jogos,livros').order('criado_em', { ascending: false }).limit(16);
     if (error) throw error;
     if (!caixa.isConnected) return;
     caixa.innerHTML = data.length ? data.map(b => `<div class="integracao"><span>${new Date(b.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}
@@ -3371,7 +3375,8 @@ function importarBackup(arquivo) {
   leitor.readAsText(arquivo);
 }
 // CSV com ";" e BOM (abre certo no Excel em português)
-const paraCSV = linhas => '\ufeff' + linhas.map(l => l.map(v => { const s = String(v ?? ''); return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }).join(';')).join('\r\n');
+// Texto que começa com = + - @ vira fórmula no Excel: ganha um ' na frente (números ficam como estão)
+const paraCSV = linhas => '\ufeff' + linhas.map(l => l.map(v => { let s = String(v ?? ''); if (typeof v === 'string' && /^[=+\-@\t\r]/.test(s)) s = "'" + s; return /[";\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }).join(';')).join('\r\n');
 function csvJogos() {
   const cab = ['Nome', 'Plataforma', 'Status', 'Meta', 'Dificuldade', 'Dificuldade é estimativa', 'Horas estimadas', 'Horas é estimativa', 'Horas jogadas', 'Progresso %', 'Prioridade', 'Troféus online', 'Início', 'Conclusão', 'Duplicado', 'Versão escolhida', 'Notas'];
   const linhas = state.jogos.slice().sort(porNome).map(j => [j.nome, j.plataforma, j.status, j.meta, j.dificuldade, j.estDif ? 'sim' : '', j.horasEstimadas, j.estHoras ? 'sim' : '', j.horasJogadas, j.progresso, j.prioridade, j.online, fmtData(j.inicio), fmtData(j.conclusao), j.grupo ? 'sim' : '', j.versaoEscolhida ? 'sim' : '', j.notas]);
@@ -3397,7 +3402,9 @@ function apagarTudo() {
    Só liga quando o app roda na Vercel (rota api/config).
    Fora dela (arquivo local, GitHub Pages) tudo segue só no aparelho.
    ========================================================= */
-const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+// Versão fixa e conferida (SRI): se o arquivo do CDN for alterado, o navegador se recusa a rodar
+const SUPABASE_CDN = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js';
+const SUPABASE_SRI = 'sha384-0w2KAL2YHP6wKOkUDzkCDGgVvfmHnj02DHeQ6XcHOgTfFsGyonKOpShMH1x6nk9o';
 const CHAVE_META = CHAVE + '.nuvem';
 const nuvem = { ativo: false, cli: null, usuario: null, integracoes: {}, enviando: false, denovo: false, timer: null, alteracoes: 0, estado: '', ultimaSync: null };
 
@@ -3419,9 +3426,10 @@ function marcarAlteracao() {
   if (!m.pendente) { m.pendente = true; gravarMeta(m); }
   if (nuvem.ativo && nuvem.usuario) { clearTimeout(nuvem.timer); nuvem.timer = setTimeout(enviar, 1200); indicador('pendente'); }
 }
-function carregarScript(src) {
+function carregarScript(src, integridade) {
   return new Promise((ok, falha) => {
     const sc = document.createElement('script');
+    if (integridade) { sc.integrity = integridade; sc.crossOrigin = 'anonymous'; }
     sc.src = src; sc.onload = ok; sc.onerror = falha;
     document.head.appendChild(sc);
   });
@@ -3434,7 +3442,7 @@ async function iniciarNuvem() {
     if (r.ok && (r.headers.get('content-type') || '').includes('json')) cfg = await r.json();
   } catch (e) { /* sem servidor: modo local */ }
   if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) return;
-  try { if (!window.supabase) await carregarScript(SUPABASE_CDN); }
+  try { if (!window.supabase) await carregarScript(SUPABASE_CDN, SUPABASE_SRI); }
   catch (e) { toast('Sem internet para entrar. Usando os dados deste aparelho.', 'aviso'); return; }
   nuvem.cli = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
   nuvem.ativo = true;
@@ -3776,7 +3784,8 @@ function mostrarPlano(fonte, resp) {
 function aplicarDadosSync(j, it, campo) {
   j[campo] = it.chave;
   if (it.imagem) j.imagem = it.imagem;
-  if (it.horas != null) { const ant = j.horasJogadas || 0; j.horasJogadas = it.horas; registrarHoras(Math.round((it.horas - ant) * 10) / 10); }
+  // Só aumenta: a PSN/Steam às vezes atualiza com atraso, e não pode apagar sessões registradas à mão
+  if (it.horas != null && it.horas > (j.horasJogadas || 0)) { const ant = j.horasJogadas || 0; j.horasJogadas = it.horas; registrarHoras(Math.round((it.horas - ant) * 10) / 10); }
   if (it.progresso != null) j.progresso = Math.max(0, Math.min(100, Math.round(it.progresso)));
   if (it.inicio && !j.inicio && j.status !== 'Na fila') j.inicio = it.inicio;
   if (it.concluido100 && j.status !== 'Platinado/100%') {
@@ -3795,7 +3804,13 @@ function aplicarPlano() {
   const p = planoSync; if (!p) return;
   const antes = jogador();
   let atualizados = 0, criados = 0, concluidos = 0, ignorados = 0;
-  p.atualizar.forEach(({ j, it }) => { if (aplicarDadosSync(j, it, p.campo)) concluidos++; atualizados++; });
+  // Os jogos são procurados de novo pelo id: se outro aparelho salvou com a revisão aberta, o estado foi trocado
+  p.atualizar.forEach(({ j: antigo, it }) => {
+    const j = acharJogo(antigo.id);
+    if (!j) return;
+    if (aplicarDadosSync(j, it, p.campo)) concluidos++;
+    atualizados++;
+  });
   $$('[data-sync]').forEach(sel => {
     const n = p.novos[Number(sel.dataset.sync)]; if (!n) return;
     const v = sel.value;
