@@ -3469,6 +3469,7 @@ $('#formLogin').addEventListener('submit', async e => {
     const m = lerMeta(); delete m.offline; gravarMeta(m);
     $('#telaLogin').hidden = true; f.elements.senha.value = '';
     await sincronizar(true);
+    registrarTokenPsn();
     render();
     toast('Conectado. Seus dados estão na nuvem.');
   } catch (err) {
@@ -3628,6 +3629,7 @@ async function chamarApi(caminho) {
     if (erro.codigo === 'npsso') marcarTokenPsnVencido();
     throw erro;
   }
+  if (/^api\/(psn|trofeus\?fonte=psn)/.test(caminho)) limparTokenPsnVencido(); // a PSN aceitou o token
   return corpo;
 }
 /* ---------- Token da PSN (NPSSO): passo a passo e aviso antes de vencer ---------- */
@@ -3643,6 +3645,10 @@ function registrarTokenPsn() {
   if (!id || tokenPsnAtual()) return;
   state.integracoes.psnToken = { id, desde: hoje(), vencido: false };
   salvar();
+}
+function limparTokenPsnVencido() {
+  const t = tokenPsnAtual();
+  if (t && t.vencido) { t.vencido = false; salvar(); }
 }
 function marcarTokenPsnVencido() {
   const t = tokenPsnAtual();

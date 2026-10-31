@@ -129,7 +129,11 @@ async function avisoTokenPsn(db, porUsuario, linhas) {
   const id = idTokenPsn();
   if (!id) return { psn: 'não configurada' };
   let valido = true;
-  try { await loginPsn(); } catch (e) { valido = false; }
+  try { await loginPsn(); }
+  catch (e) {
+    if (e.codigo !== 'npsso') return { psn: 'sem resposta da PSN hoje' }; // PSN fora do ar: não acusa o token
+    valido = false;
+  }
   let avisos = 0;
   for (const [uid, lista] of Object.entries(porUsuario)) {
     const t = (((linhas.find(l => l.user_id === uid) || {}).dados || {}).integracoes || {}).psnToken;
