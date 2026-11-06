@@ -46,5 +46,34 @@ Não há testes automáticos no repositório. Para conferir uma mudança: `node 
 `index.html` num navegador (Playwright) simulando `/api/*`; sem `api/config` o app roda em modo só-local.
 
 ## Histórico
-- 2026-10-31: token da PSN venceu → passo a passo no app, aviso antes de vencer e notificação no cron.
-  Revisão completa do código: 10 correções (segurança, sincronização, backups, mensagens de erro).
+
+### Conversa de 31/10 a 06/11/2026 (salva antes de formatar o PC)
+Sessão do Claude Code na nuvem: https://claude.ai/code/session_01RmSo6yWVYspZZVcPDLCru2
+(a conversa fica guardada na conta do claude.ai, não no PC; formatar o PC não apaga nada).
+
+**Como começou:** ao sincronizar a PSN apareceu "O token NPSSO da PSN expirou ou é inválido".
+Causa: o token NPSSO vence sozinho a cada ~2 meses. Não era defeito no código.
+
+**O que foi feito (tudo já está na `main` e publicado na Vercel):**
+1. Commit `be8df64`: o erro de token vencido mostra o passo a passo com botões (playstation.com, página do
+   código, Vercel) na sincronização e na tela de troféus. Ajustes → "Token da PSN" mostra há quantos dias está
+   em uso e quando deve vencer; aviso na aba Jogos a partir de 50 dias; notificação no celular pelo cron.
+2. Commit `fe73d8a`: queda da PSN/Sony não é mais tratada como token vencido; sincronização bem-sucedida
+   tira a marca de vencido; o token também é registrado depois de entrar com e-mail e senha.
+3. Commit `507b6f0` ("banca": revisão completa do sistema, 10 correções):
+   supabase-js fixo com SRI + CSP no `vercel.json`; links só http(s); aplicar sincronização procura jogos pelo id;
+   horas nunca diminuem; data real da platina; horas da PSN casadas com nomes parecidos; backups automáticos e
+   do app contam separado (8 de cada); GG.deals 429 não aparece como chave inválida; Steam fora do ar não aparece
+   como STEAM_ID errado; CSV protegido contra fórmula.
+4. Commits `ce9fdd0` e `5d685fe`: criados este `memory.md` e o `AGENTS.md`.
+
+**Pendências (onde paramos):**
+- [ ] Hygor precisa **renovar o token da PSN** (passos em "Token da PSN" acima). Sem isso os jogos da PSN não aparecem.
+- [ ] Depois de renovar: abrir o app, sincronizar a PSN e conferir se Ajustes → Token da PSN mostra "Trocado hoje".
+- [ ] Testar no site de verdade o que não deu para testar na nuvem: login (supabase-js novo + CSP),
+      sincronização PSN/Steam (data da platina e horas) e a aba Promoções. Se algo quebrar, mandar print.
+- Ideias não feitas (só se ele pedir): tabela própria para os avisos do token (hoje usa `alertas_preco`);
+  limitar a busca da data da platina aos jogos ainda não concluídos no app.
+
+**Para retomar:** abrir uma conversa nova no Claude Code com o repositório `hygoribeiro/Estante` e dizer
+"leia o memory.md e o AGENTS.md e continue de onde paramos".
